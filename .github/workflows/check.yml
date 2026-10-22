@@ -1,0 +1,69 @@
+name: check
+
+# builds every demo, template and example, checks frames are deterministic, and renders + reviews the one-take
+# template, on Linux, macOS and Windows. (The voice tools need a ~5 GB model, so CI only compiles them.)
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      SK: plugins/animate-pls/skills/animate-pls
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: ffmpeg
+        run: |
+          case "$RUNNER_OS" in
+            Linux) sudo apt-get update -q && sudo apt-get install -y -q ffmpeg ;;
+            macOS) brew install ffmpeg ;;
+            Windows) choco install ffmpeg -y --no-progress ;;
+          esac
+          ffmpeg -version | head -1
+      - name: playwright
+        run: |
+          npm i -g playwright
+          if [ "$RUNNER_OS" = Linux ]; then npx playwright install --with-deps chromium; else npx playwright install chromium; fi
+      - name: build everything
+        run: |
+          for p in templates/one-take templates/beat-cut templates/piece examples/history-of-ai $SK/styles/*/demo; do
+            case "$p" in "$SK"/*) dir="$p" ;; *) dir="$SK/$p" ;; esac
+            node $SK/tools/build.mjs "$dir"
+          done
+      - name: frames are deterministic
+        run: |
+          node $SK/tools/tile.mjs $SK/templates/one-take tile-one-take.png 12 60 140 200 236 | tee tile.log
+          node $SK/tools/tile.mjs $SK/examples/history-of-ai tile-history.png 48 300 700 1200 | tee -a tile.log
+          ! grep -q "deterministic: false" tile.log
+      - name: render and review the one-take template
+        run: |
+          node $SK/tools/export.mjs $SK/templates/one-take
+          node $SK/tools/review.mjs $SK/templates/one-take | tee review.log
+          grep -q "format F9: PASS" review.log
+          grep -q "text: PASS" review.log
+      - name: voice tools compile
+        run: |
+          python -m py_compile $SK/tools/vox.py $SK/tools/split_take.py $SK/tools/voicelib.py $SK/tools/voice_words.py
+          node --check $SK/tools/vox.mjs && node --check $SK/tools/split-take.mjs && node --check $SK/tools/voice-setup.mjs && node --check $SK/tools/eleven-script.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-${{ matrix.os }}
+          path: |
+            tile-*.png
+            plugins/animate-pls/skills/animate-pls/templates/one-take/renders/final.mp4
+          if-no-files-found: ignore

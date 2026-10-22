@@ -1,6 +1,6 @@
 # Intake
 
-Ask only what you can't infer from the request. AskUserQuestion takes up to 4 questions per call: ask 1–4 first, then 5–8 in a second call (skip the ones the request already answers). Recommended option first. If the user said "just make it", use every default and say which you picked.
+Ask only what you can't infer from the request. In Claude Code, AskUserQuestion takes up to 4 questions per call: ask 1–4 first, then 5–8 in a second call. In other agents ask the same questions as short numbered lists, 1–4 then 5–8. Skip the ones the request already answers. Recommended option first. If the user said "just make it", use every default and say which you picked.
 
 ## The questions
 
@@ -10,15 +10,20 @@ Ask only what you can't infer from the request. AskUserQuestion takes up to 4 qu
 2. **Where will it go, and how long?** (multi-select for the formats — the first one picked is the main one)
    - 9:16 — Shorts / Reels / TikTok *(recommended for a history or explainer)*
    - 16:9 — YouTube / b-roll / a talk
-   - 1:1 — a feed post
+   - 1:1 — a feed post *(recommended for LinkedIn: it fills the feed on phone and desktop)*
    - 4:5 — an Instagram / LinkedIn feed post
 
    Length: 20–30s for a quick social piece, 45–60s for a history or explainer. **Several formats** come from one piece: list them in `piece.json` `"formats"` and lay the scenes out with `LX` / `LY` / `UNIT` (SKILL.md → Formats). Each extra format costs a little layout work, not a new piece.
 
-3. **Voice?**
+3. **Voice?** You write the script either way; the picture is timed to the words (SKILL.md → Voice-over).
+   - **Your own voice, cloned free with VoxCPM2:** drop 15–30s of yourself talking naturally (any recording, a phone voice memo is fine) and it speaks every line in your voice and your accent, locally *(recommended for an explainer over ~30s)*
+   - **A designed voice with VoxCPM2:** no recording, described in a few words (tone, age, pace)
+   - **ElevenLabs:** you get the script as paste-ready text for the ElevenLabs site (the free plan works), you send back the MP3, and it's cut into lines (or the ElevenLabs connector, if your agent has it)
+   - **You read the script** in one take, and it's cut into lines
    - Music only; the year/caption tags carry it *(recommended for a short social piece)*
-   - A narrated voice-over: you write the script, the voice comes from the ElevenLabs connector (if they have it connected) or their own recording, and the picture is timed to the words (SKILL.md → Voice-over) *(recommended for an explainer over ~30s)*
    - On-screen handwritten narration
+
+   With a VoxCPM2 voice, check the voice env first (`node tools/voice-setup.mjs --check`; run it without `--check` to install, ~5 GB once).
 
 4. **The look?** *(skip the gallery when the request already names a style or brings references — go to new-style.md or the named style)* Build the gallery (`node tools/gallery.mjs <out.png> [<project>/styles]`), show it, then ask:
    - One of these: cut paper / crosshatch ink / riso print / sketchbook / math / pixel / isometric *(recommend the one that fits the subject: cut paper for histories and stories, crosshatch for Claude Code explainers, math for anything with equations or graphs, pixel for computing history, isometric for products, devices and infrastructure, riso or sketchbook for a softer editorial feel)*
@@ -45,4 +50,4 @@ Ask only what you can't infer from the request. AskUserQuestion takes up to 4 qu
 9:16, 1080×1920, 24fps, 120 BPM (an 8th = 6 frames exactly), 30–60s, music only (composed in code), no assets, the style that fits the subject (cut paper if unsure), the style's own hero, format chosen from FORMATS.md by the plot engine.
 
 ## Pick the format yourself
-Don't ask the user to choose a story format — it's grammar, not taste. A history or a process over time → chronology joined by shape morphs (F2). Someone wants something and a helper solves it → mission, cut on the beat (F4). One carried thing through many places → fixed-hero journey (F5). A question answered by a list → catalogue (F3). State the choice at the story check so they can veto it. When two formats fit (a process can be a chronology or a machine), prefer the **proven** one (see FORMATS.md status lines) and say so.
+Don't ask the user to choose a story format — it's grammar, not taste. A history or a process over time → chronology joined by shape morphs (F2). Someone wants something and a helper solves it → mission, cut on the beat (F4). One carried thing through many places → fixed-hero journey (F5). A question answered by a list → catalogue (F3). A product or feature film, or "make it feel like one continuous shot, not slides" → one take (F9, new). State the choice at the story check so they can veto it. When two formats fit (a process can be a chronology or a machine), prefer the **proven** one (see FORMATS.md status lines) and say so.
