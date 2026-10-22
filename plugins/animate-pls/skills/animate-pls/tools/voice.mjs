@@ -3,8 +3,9 @@
 //   usage: node tools/voice.mjs pieces/<name> [--scratch] [--model small.en] [--rate 0]
 // reads  <piece>/voice/script.json:
 //   { "lead": 0.8, "tail": 1.5, "lines": [ { "id": "open", "text": "As it is spoken.", "file": "open.mp3", "after": 0.4 }, ... ] }
-//   file   the line's audio, relative to <piece>/voice/: a text-to-speech take (e.g. the ElevenLabs MCP's download link,
-//          saved there), or the user's own recording. One file per line, so pauses and re-takes stay per line.
+//   file   the line's audio, relative to <piece>/voice/: a VoxCPM2 take (tools/vox.mjs), a line cut from one long take
+//          (tools/split-take.mjs: an ElevenLabs download or the user reading the script), or the user's own recording.
+//          One file per line, so pauses and re-takes stay per line.
 //   after  the pause after the line (s); lead = silence before the first line, tail = after the last
 // writes <piece>/voice/voice.wav (48 kHz mono, the lines with their pauses) and <piece>/voice.json:
 //   { duration, lines: [ { id, text, t0, t1, words: [ { w, t0, t1 } ] } ] }; tools/build.mjs injects it as VOICE.
@@ -16,6 +17,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { python } from './pyenv.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
@@ -71,9 +73,9 @@ fs.writeFileSync(wav, Buffer.concat([hdr, out]));
 // ---- word times: what the recogniser heard, matched to the script's words line by line
 const norm = (w) => w.toLowerCase().replace(/[^a-z0-9]/g, '');
 let heard = null;
-const py = spawnSync(process.platform === 'win32' ? 'python' : 'python3', [path.join(HERE, 'voice_words.py'), wav, '--model', opt('--model', 'small.en')], { maxBuffer: 1 << 26 });
+const py = spawnSync(python(), [path.join(HERE, 'voice_words.py'), wav, '--model', opt('--model', 'small.en')], { maxBuffer: 1 << 26 });
 if (py.status === 0) { try { heard = JSON.parse(py.stdout.toString().trim().split('\n').pop()); } catch { heard = null; } }
-if (!heard) console.warn('word times: faster-whisper unavailable (pip install faster-whisper) — estimating from the letters');
+if (!heard) console.warn('word times: faster-whisper unavailable (node tools/voice-setup.mjs) — estimating from the letters');
 let matched = 0, totalWords = 0;
 for (const L of lines) {
   const words = L.text.split(/\s+/).filter((w) => norm(w));
