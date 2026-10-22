@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 animate-pls
+# animate-pls
 
 ### Animated explainer videos, written in code and narrated in your own voice, for free.
 
@@ -12,11 +12,11 @@ An agent skill for **Claude Code**, **Codex** and any agent that reads skills.
 [![Voice: VoxCPM2, local](https://img.shields.io/badge/voice-VoxCPM2_·_local-5f9c5c?style=flat-square)](#voices)
 [![Sizes](https://img.shields.io/badge/sizes-9%3A16_·_1%3A1_·_4%3A5_·_16%3A9-52d6c4?style=flat-square)](#sizes)
 
-[**Install**](#install) · [**Make a video**](#make-a-video) · [**Voices**](#voices) · [**Formats**](#story-formats) · [**Tools**](#tools) · [**Credits**](#credits)
+[**Install**](#install) · [**Make a video**](#make-a-video) · [**Voices**](#voices) · [**Formats**](#story-formats) · [**Tools**](#tools) · [**Credits**](docs/CREDITS.md)
 
 <br>
 
-<img src="docs/gallery.png" width="760" alt="Nine tiles drawn by animate-pls: cut paper (GSoC 2024 at INCF), crosshatch (Querypls), riso (Open Source Summit Europe 2024), sketchbook (a first-PR guide), math (BestRAG), pixel (GraphNeT), isometric (LFX 2023, Zowe), the one-take format (AI engineer today) and a new blueprint look (NED University)">
+<img src="docs/gallery.png" width="760" alt="Nine tiles drawn by animate-pls: cut paper, crosshatch, riso, sketchbook, math, pixel, isometric, the one-take format and a new blueprint look">
 
 <sub>Every tile is a frame drawn by animate-pls itself: the seven styles, the one-take format, and a blueprint look made for this page. Each tells part of <a href="https://github.com/samadpls">samadpls</a>' story.</sub>
 
@@ -29,20 +29,20 @@ You describe the video. Your agent writes it as a single `<canvas>` page: every 
 > [!NOTE]
 > **No AI video model, no stock footage, no subscription.** The same piece renders the same frames on every machine, every time.
 
-## ✨ Highlights
+## Highlights
 
 | | |
 |---|---|
-| 🎙️ **Your voice, free** | Record 15–30 seconds of yourself. [VoxCPM2](https://github.com/OpenBMB/VoxCPM) clones it on your machine and reads every line in your voice, rhythm and accent. |
-| ⏱️ **Picture follows the voice** | Every word is timed locally. Cuts land after sentence ends, and a re-take re-times the whole video. |
-| 🎞️ **One-take format** | No cuts, no slides: the camera pushes through one object into the next scene, or an object turns into its counterpart. |
-| 🎨 **Seven styles + yours** | Cut paper, crosshatch ink, riso print, sketchbook, math, pixel art and isometric, or a new look matched from your references. |
-| 📐 **Every size from one piece** | 9:16, 1:1, 4:5 and 16:9, each laid out for its shape rather than cropped. |
-| ✅ **"Done" is measured** | Cuts on the beat, the story's loudness arc, clipped or overlapping text, narration pace, and loudness for phones. |
+| **Your voice, free** | Record 15–30 seconds of yourself. [VoxCPM2](https://github.com/OpenBMB/VoxCPM) clones it on your machine and reads every line in your voice, rhythm and accent. |
+| **Picture follows the voice** | Every word is timed locally. Cuts land after sentence ends, and a re-take re-times the whole video. |
+| **One-take format** | No cuts, no slides: the camera pushes through one object into the next scene, or an object turns into its counterpart. |
+| **Seven styles + yours** | Cut paper, crosshatch ink, riso print, sketchbook, math, pixel art and isometric, or a new look matched from your references. |
+| **Every size from one piece** | 9:16, 1:1, 4:5 and 16:9, each laid out for its shape rather than cropped. |
+| **"Done" is measured** | Cuts on the beat, the story's loudness arc, clipped or overlapping text, narration pace, and loudness for phones. |
 
 <a id="install"></a>
 
-## 📦 Install
+## Install
 
 **You need:** [Node 18+](https://nodejs.org), [ffmpeg](https://ffmpeg.org/download.html) on your PATH, and Playwright's Chromium:
 
@@ -123,7 +123,7 @@ It works best with [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 <a id="make-a-video"></a>
 
-## 🎥 Make a video
+## Make a video
 
 Ask your agent in plain words:
 
@@ -150,7 +150,7 @@ Videos are saved in your project under `pieces/<name>/renders/`.
 
 <a id="voices"></a>
 
-## 🎙️ Voices
+## Voices
 
 | Voice | Cost | How it works |
 |---|:---:|---|
@@ -176,7 +176,7 @@ Videos are saved in your project under `pieces/<name>/renders/`.
 
 <a id="sizes"></a>
 
-## 📐 Sizes
+## Sizes
 
 | Size | Pixels | Best for |
 |:---:|:---:|---|
@@ -189,21 +189,21 @@ One piece renders to several sizes, each laid out for its shape (`--formats 9:16
 
 <a id="story-formats"></a>
 
-## 🧭 Story formats
+## Story formats
 
 The agent picks the format from what drives your story; you can veto it at the story check.
 
 | | Format | Shape | Status |
 |:---:|---|---|:---:|
 | F1 | Machine | One token travels through stations on one big sheet | studied |
-| F2 | Chronology | Eras joined by shape morphs; a history | ✅ proven |
+| F2 | Chronology | Eras joined by shape morphs; a history | proven |
 | F3 | Catalogue | A question answered by a list, cut on the beat | studied |
-| F4 | Mission | Someone wants something; a helper solves it step by step | ✅ proven |
-| F5 | Fixed-hero journey | The hero holds its spot while the world changes; narrated pieces | ✅ proven |
+| F4 | Mission | Someone wants something; a helper solves it step by step | proven |
+| F5 | Fixed-hero journey | The hero holds its spot while the world changes; narrated pieces | proven |
 | F6 | Process loop | Finished result → blank → the real making steps → result | studied |
 | F7 | Variation reel | One subject redrawn N ways, one per second | studied |
 | F8 | Trailer | Claim cards proved by footage | sketch |
-| **F9** | **One take** | **Every beat carried into the next, no cuts** | 🆕 new |
+| **F9** | **One take** | **Every beat carried into the next, no cuts** | new |
 
 <p align="center">
   <img src="docs/one-take.jpg" alt="The one-take template: a sketched card opens into the machine, the build bar becomes the phone's screen, the camera pulls back">
@@ -213,7 +213,7 @@ The agent picks the format from what drives your story; you can veto it at the s
 
 <a id="tools"></a>
 
-## 🛠️ Drive the tools yourself
+## Drive the tools yourself
 
 ```bash
 SKILL=~/.claude/skills/animate-pls                                # or wherever your agent installed it
@@ -233,27 +233,18 @@ node $SKILL/tools/review.mjs pieces/my-piece                      # contact shee
 
 Open any built `index.html` in a browser to preview it: click to hear the score, and add `?t=12.5` to the URL to freeze a frame.
 
-## 🗺️ Status
+## Status
 
 | | macOS | Linux | Windows |
 |---|:---:|:---:|:---:|
-| Build, tile, export, review | ✅ | not yet | not yet |
-| Voice (VoxCPM2 clone + design, split, timing) | ✅ Apple Silicon | not yet | not yet |
+| Build, tile, export, review | works | not yet | not yet |
+| Voice (VoxCPM2 clone + design, split, timing) | works on Apple Silicon | not yet | not yet |
 
 The one-take format is new: its template passes every check, but no full piece has used it yet. Reports and fixes are welcome.
 
-<a id="credits"></a>
+## License
 
-## 🙏 Credits
-
-- **[animate](https://github.com/cth9191/animate)** by cth9191 (MIT) is the base: the styles, kit, story grammar and tools. animate-pls adds the free voice, the one-take format, install for any agent, and fixes for square and wide pieces.
-- **[onetake](https://github.com/feitangyuan/onetake)** by feitangyuan inspired the one-take format. Only the idea is used; no code or text from it is here.
-- **[VoxCPM2](https://github.com/OpenBMB/VoxCPM)** by OpenBMB (Apache-2.0) is the voice. **[faster-whisper](https://github.com/SYSTRAN/faster-whisper)** (MIT) times the words.
-- More video skills for coding agents: **[awesome-claude-video-skills](https://github.com/zhuyansen/awesome-claude-video-skills)**.
-
-## 📄 License
-
-[MIT](LICENSE). The licence keeps cth9191's copyright notice for animate alongside samadpls'.
+[MIT](LICENSE). Built on [animate](https://github.com/cth9191/animate) by cth9191; see [credits](docs/CREDITS.md).
 
 <div align="center">
 <br>
