@@ -7,3 +7,7 @@ __pycache__/
 # built files (tools/build.mjs makes them from src/ + kit/ + the style)
 plugins/**/index.html
 plugins/**/review/
+# README gallery tiles: only the sources are kept (docs/gallery/build.mjs renders the rest)
+docs/gallery/*/index.html
+docs/gallery/*/review/
+docs/gallery/*/thumb.png

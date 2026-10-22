@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your own look</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0a1f45; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  YOUR OWN LOOK — a README gallery tile in "blueprint", a style made for it with the style contract
+//  (styles/blueprint/ beside this piece). 1:1, 3.0s @ 120 BPM, 24fps, one era.
+//  A blueprint of a graduation cap resting on an open laptop: the lines plot on, the dimensions extend,
+//  a bow compass with two dot eyes drops in and spreads its legs across the cap. Settled by 2.2s; thumb at 2.5s.
+//  Build: node <skill>/tools/build.mjs <this folder>
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // the storyboard's notes
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['sheet', 0, 0.0, 3.0, 'a blueprint of a graduation cap on a laptop; the compass measures the cap'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: '1:1',
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { border: 0.0, tag: 0.1, laptop: 0.2, cap: 0.55, code: 0.9, dims: 1.0, compass: 1.05, open: 1.35, title: 1.3, swing: 1.85 },
+  acts: [
+    { name: '1 Sheet', role: 'build', t0: 0.0, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'the compass measures the cap', sound: 'one soft pad', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

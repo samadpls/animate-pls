@@ -6,7 +6,7 @@ This repo is an agent skill. The skill itself is `plugins/animate-pls/skills/ani
 
 - `plugins/animate-pls/skills/animate-pls/`: the skill (SKILL.md, intake, grammar, kit, styles, templates, examples, tools)
 - `.claude-plugin/marketplace.json` and `plugins/animate-pls/.claude-plugin/plugin.json`: the Claude Code plugin manifests
-- `docs/`: the README images
+- `docs/`: the README images. `docs/gallery/` holds the nine gallery tiles as real pieces (one per style, the one-take format, and the `blueprint` look in `09-your-look/styles/`). `node docs/gallery/build.mjs --rebuild` re-renders every `thumb.png` from source and lays out `docs/gallery.png`.
 
 ## Rules
 

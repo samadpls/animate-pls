@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Source Summit</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1d1a17; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 03 — RISO. 1:1, 3.0s @ 120 BPM, 24fps, one shot.
+//  A riso-printed conference stage: the hero speaks at the podium of Open Source Summit Europe 2024 (Vienna),
+//  points at the big screen where a git graph branches and merges, two stage lamps snap on.
+//  Everything settles by 2.2s; the README thumbnail is the frame at t = 2.5.
+//  Build: node <skill>/tools/build.mjs docs/gallery/03-riso
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const PRINTF = '"Arial Black", "Helvetica Neue", "Franklin Gothic Heavy", Impact, "DejaVu Sans", "Liberation Sans", sans-serif';
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Chalkboard SE", cursive';
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['stage', 0, 0.0, 3.0, 'the hero speaks at the podium; the lamps snap on; the git graph merges on the screen'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: '1:1',
+  format: 'one-shot',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { lampA: 0.25, lampB: 0.5, main: 0.5, branch: 1.0, point: 1.25, merge: 1.75 },
+  acts: [
+    { name: '1 Stage', role: 'gift', t0: 0.0, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'the hero speaks; the branch has merged', sound: 'one soft pad', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

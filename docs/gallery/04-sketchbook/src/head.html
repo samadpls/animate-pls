@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your first PR</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1d1a17; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 04 — sketchbook. 1:1, 3.0s @ 120 BPM, 24fps. The thumbnail is the frame at t = 2.5.
+//  A doodled path of the first-contribution steps (fork, branch, commit, pull request) is pencilled in, inked
+//  and joined by hand-drawn arrows; it ends in a big circled "merged" that gets a green tick, and the doodle
+//  hero, who walked the path, cheers beside it. Everything is drawn on and settled by 2.2s.
+//  Build: node <skill>/tools/build.mjs <this dir>; still: node <skill>/tools/still.mjs <this dir> 2.5 thumb.png
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Chalkboard SE", cursive';
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['tile', 0, 0.0, 3.0, 'the steps are drawn on and joined; "merged" is circled and ticked; the hero cheers'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { steps: 0.15, circle: 1.2, word: 1.3, hilite: 1.55, tick: 1.7, cheer: 1.88, settle: 2.2 },
+  acts: [
+    { name: '1 The path', role: 'build', t0: 0.0, t1: 1.7 },
+    { name: '2 Merged', role: 'gift', t0: 1.7, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'the path ends in "merged"; the hero cheers', sound: 'a soft pad', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

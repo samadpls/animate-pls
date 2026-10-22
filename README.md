@@ -16,9 +16,9 @@ An agent skill for **Claude Code**, **Codex** and any agent that reads skills.
 
 <br>
 
-<img src="docs/styles.png" width="760" alt="The seven built-in styles: cut paper, crosshatch, riso, sketchbook, math, pixel, isometric, and a custom look">
+<img src="docs/gallery.png" width="760" alt="Nine tiles drawn by animate-pls: cut paper (GSoC 2024 at INCF), crosshatch (Querypls), riso (Open Source Summit Europe 2024), sketchbook (a first-PR guide), math (BestRAG), pixel (GraphNeT), isometric (LFX 2023, Zowe), the one-take format (AI engineer today) and a new blueprint look (NED University)">
 
-<sub>Seven built-in styles, or show it a video, stills or a web page and it matches your own look.</sub>
+<sub>Every tile is a frame drawn by animate-pls itself: the seven styles, the one-take format, and a blueprint look made for this page. Each tells part of <a href="https://github.com/samadpls">samadpls</a>' story.</sub>
 
 </div>
 
@@ -257,5 +257,5 @@ The one-take format is new: its template passes every check, but no full piece h
 
 <div align="center">
 <br>
-<sub>Made by <a href="https://github.com/samadpls">samadpls</a></sub>
+<sub>Made with ❤️ by <a href="https://samadpls.com">samadpls.com</a></sub>
 </div>
