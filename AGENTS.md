@@ -25,4 +25,4 @@ node $SK/tools/export.mjs $SK/templates/one-take && node $SK/tools/review.mjs $S
 node $SK/tools/voice-setup.mjs --check                                         # the voice env, if you touched the voice tools
 ```
 
-CI (`.github/workflows/check.yml`) runs the builds, the tile determinism check and the one-take export and review on Linux, macOS and Windows.
+The repo has no CI on purpose. Run these locally, ideally on each OS you can reach.

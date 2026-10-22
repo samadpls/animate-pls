@@ -11,7 +11,6 @@ An agent skill for **Claude Code**, **Codex** and any agent that reads skills.
 [![Codex skill](https://img.shields.io/badge/Codex-skill-111111?style=flat-square)](#codex)
 [![Voice: VoxCPM2, local](https://img.shields.io/badge/voice-VoxCPM2_·_local-5f9c5c?style=flat-square)](#voices)
 [![Sizes](https://img.shields.io/badge/sizes-9%3A16_·_1%3A1_·_4%3A5_·_16%3A9-52d6c4?style=flat-square)](#sizes)
-[![check](https://github.com/samadpls/animate-pls/actions/workflows/check.yml/badge.svg)](https://github.com/samadpls/animate-pls/actions/workflows/check.yml)
 
 [**Install**](#install) · [**Make a video**](#make-a-video) · [**Voices**](#voices) · [**Formats**](#story-formats) · [**Tools**](#tools) · [**Credits**](#credits)
 
@@ -238,7 +237,7 @@ Open any built `index.html` in a browser to preview it: click to hear the score,
 
 | | macOS | Linux | Windows |
 |---|:---:|:---:|:---:|
-| Build, tile, export, review | ✅ | CI | CI |
+| Build, tile, export, review | ✅ | not yet | not yet |
 | Voice (VoxCPM2 clone + design, split, timing) | ✅ Apple Silicon | not yet | not yet |
 
 The one-take format is new: its template passes every check, but no full piece has used it yet. Reports and fixes are welcome.
