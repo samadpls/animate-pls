@@ -15,15 +15,15 @@ const { chromium } = (() => { try { return require('playwright'); } catch { retu
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SKILL = path.resolve(HERE, '../../plugins/animate-pls/skills/animate-pls');
 const TILES = [
-  ['01-cut-paper', 'cut paper', 'GSoC 2024 · INCF'],
-  ['02-crosshatch', 'crosshatch', 'Querypls'],
-  ['03-riso', 'riso', 'Open Source Summit EU'],
-  ['04-sketchbook', 'sketchbook', 'first-PR guide'],
-  ['05-math', 'math', 'BestRAG'],
-  ['06-pixel', 'pixel', 'GraphNeT'],
-  ['07-isometric', 'isometric', 'LFX 2023 · Zowe'],
-  ['08-one-take', 'one take (F9)', 'AI engineer, today'],
-  ['09-your-look', 'your own look', 'NED University'],
+  ['01-cut-paper', 'cut paper'],
+  ['02-crosshatch', 'crosshatch'],
+  ['03-riso', 'riso'],
+  ['04-sketchbook', 'sketchbook'],
+  ['05-math', 'math'],
+  ['06-pixel', 'pixel'],
+  ['07-isometric', 'isometric'],
+  ['08-one-take', 'one take (F9)'],
+  ['09-your-look', 'your own look'],
 ];
 
 const rebuildAll = process.argv.includes('--rebuild');
@@ -37,13 +37,13 @@ for (const [dir] of TILES) {
   }
 }
 
-const items = TILES.map(([dir, style, topic], i) => {
+const items = TILES.map(([dir, style], i) => {
   const f = path.join(HERE, dir, 'thumb.png');
-  return { n: i + 1, style, topic, url: 'data:image/png;base64,' + fs.readFileSync(f).toString('base64') };
+  return { n: i + 1, style, url: 'data:image/png;base64,' + fs.readFileSync(f).toString('base64') };
 });
 const browser = await chromium.launch(), page = await browser.newPage();
 const png = await page.evaluate(async (items) => {
-  const S = 380, GAP = 26, LAB = 74, cols = 3, rows = Math.ceil(items.length / cols);
+  const S = 380, GAP = 26, LAB = 48, cols = 3, rows = Math.ceil(items.length / cols);
   const c = document.createElement('canvas'); c.width = GAP + cols * (S + GAP); c.height = GAP + rows * (S + LAB + GAP);
   const x = c.getContext('2d');
   x.fillStyle = '#1b1714'; x.fillRect(0, 0, c.width, c.height);
@@ -55,7 +55,6 @@ const png = await page.evaluate(async (items) => {
     x.fillStyle = '#d97757'; x.font = `700 27px ${font}`; x.fillText(String(it.n), cx + 2, cy + S + 36);
     const w = x.measureText(String(it.n)).width;
     x.fillStyle = '#f4ecd9'; x.font = `600 27px ${font}`; x.fillText(it.style, cx + w + 14, cy + S + 36);
-    x.fillStyle = '#b9ab94'; x.font = `400 21px ${font}`; x.fillText(it.topic, cx + w + 14, cy + S + 64);
   }
   return c.toDataURL('image/png').split(',')[1];
 }, items);
