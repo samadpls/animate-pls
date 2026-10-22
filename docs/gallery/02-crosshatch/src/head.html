@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Querypls</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  QUERYPLS — gallery tile, 1:1, 3.0s @ 120 BPM, 24fps, crosshatch. One era, no cuts.
+//  A hand-written question card on the warm desk is fed into the navy machine; the SQL comes out in cyan.
+//  The constant: the card. Cyan = SQL the machine wrote. Everything settles by 2.2s; the thumbnail is t = 2.5.
+//  Build: node <skill>/tools/build.mjs docs/gallery/02-crosshatch
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts: Windows, macOS, Linux
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['tile', 0, 0.0, 3.0, 'a question card is fed into the machine and comes out as SQL'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'tile',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { feed: 0.0, type: 0.55, tag: 0.15, cap: 1.2 },
+  acts: [
+    { name: '1 Feed', role: 'build', t0: 0.0, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'a question becomes SQL', sound: 'a soft pad, typing blips', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

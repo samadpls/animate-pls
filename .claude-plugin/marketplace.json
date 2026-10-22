@@ -1,0 +1,15 @@
+{
+  "name": "animate-pls",
+  "owner": {
+    "name": "samadpls",
+    "url": "https://github.com/samadpls"
+  },
+  "description": "Animated explainer videos made in code, with a free local voice-over in your own voice. For Claude Code, Codex and any agent that reads skills.",
+  "plugins": [
+    {
+      "name": "animate-pls",
+      "source": "./plugins/animate-pls",
+      "description": "Short procedural animations in any style (seven built in, or matched from your references) as single-file canvas videos with a free VoxCPM2 voice-over cloned from your own recording, a one-take format with no cuts, and MP4s in 9:16, 1:1, 4:5 and 16:9. Built through story, look and storyboard check-ins."
+    }
+  ]
+}

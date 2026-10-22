@@ -1,0 +1,9 @@
+{
+  "name": "starter",
+  "title": "Starter piece",
+  "format": { "width": 1080, "height": 1920, "fps": 24, "bpm": 120, "duration": 8.0, "frames": 192 },
+  "formats": ["9:16", "1:1", "4:5", "16:9"],
+  "storyFormat": "F2 morph chain",
+  "style": "cut-paper",
+  "review": { "safe": { "top": 240, "bottom": 420, "right": 140 }, "refs": {} }
+}

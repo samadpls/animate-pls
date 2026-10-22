@@ -1,0 +1,10 @@
+{
+  "name": "08-one-take",
+  "title": "One take: AI engineer, today",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 4.0, "frames": 96 },
+  "formats": ["1:1"],
+  "storyFormat": "F9 one take (2 beats, 1 carry: a push through the laptop screen, no cuts)",
+  "style": "crosshatch",
+  "thumb": 1.42,
+  "review": { "safe": { "top": 60, "bottom": 60, "right": 60 }, "refs": {} }
+}

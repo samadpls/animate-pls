@@ -1,0 +1,27 @@
+{
+  "name": "animate-pls",
+  "displayName": "animate-pls",
+  "description": "Make short animated videos in code (explainers, histories, product films, little stories) as single-file canvas videos rendered to MP4 in 9:16, 1:1, 4:5 and 16:9. A free local voice-over with VoxCPM2 in your own cloned voice (or a designed one, or ElevenLabs by hand); a one-take format where every beat is carried into the next; seven styles built in or a new one from your references; intake, story / look / storyboard check-ins, then a measured build.",
+  "version": "0.1.0",
+  "author": {
+    "name": "samadpls",
+    "url": "https://github.com/samadpls"
+  },
+  "homepage": "https://github.com/samadpls/animate-pls",
+  "repository": "https://github.com/samadpls/animate-pls",
+  "license": "MIT",
+  "keywords": [
+    "animation",
+    "canvas",
+    "video",
+    "explainer",
+    "voice-over",
+    "voice-cloning",
+    "voxcpm",
+    "one-take",
+    "storyboard",
+    "procedural",
+    "motion-graphics",
+    "linkedin"
+  ]
+}

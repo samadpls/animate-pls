@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One take: AI engineer, today</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  ONE TAKE: AI ENGINEER, TODAY — 1:1, 4.0s @ 120 BPM, 24fps, crosshatch. F9: no scene ever replaces another.
+//  A warm desk from above: a laptop with three project notes stuck along its lid, the ink-dot hero at the keys.
+//  The camera pushes through the laptop's screen (one 'through' carry) into the navy world inside it, where an
+//  ad engine scans a brand's website, pulls out its brand DNA and generates a grid of on-brand ad cards.
+//  The constant: the screen (it is the doorway). Terracotta = the hero only. Cyan = the engine at work.
+//  Gallery thumb: t = 1.42 (the last frame of the push where the desk still frames the screen; the push eases in, so by 1.5 the screen fills the frame).
+//  Build: node <skill>/tools/build.mjs docs/gallery/08-one-take
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 4.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts: Windows, macOS, Linux
+const CX = 540;
+
+const ERA_LIST = [[0, 2, () => sceneDesk()], [2, 4, () => sceneInside()]];
+const SHOTS = [
+  ['desk',   0, 0.0, 2.0, 'the desk: AI engineer, today'],
+  ['inside', 1, 2.0, 4.0, 'inside the screen: the ad engine'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'F9',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  carries: [2.0],
+  cues: { tag: 0.1, notes: [0.25, 0.5, 0.75], push: 1.0, gen: 1.0, cards: [2.25, 2.75], hero: 2.25, cap: 2.4 },
+  acts: [
+    { name: '1 Desk',   role: 'build',   t0: 0.0, t1: 1.0 },
+    { name: '2 Push',   role: 'journey', t0: 1.0, t1: 2.0 },
+    { name: '3 Inside', role: 'gift',    t0: 2.0, t1: 4.0 },
+  ],
+  board: [
+    { t: 0.9, title: 'AI engineer, today', sound: 'three plucks as the notes stick', next: 'push through the screen' },
+    { t: 1.33, title: 'the screen opens', sound: 'a rising whoosh', next: 'inside' },
+    { t: 3.5, title: 'the ad engine that knows your brand', sound: 'a darker pad, a pluck per new ad', next: 'end' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;
