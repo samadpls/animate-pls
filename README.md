@@ -12,7 +12,7 @@ An agent skill for **Claude Code**, **Codex** and any agent that reads skills.
 [![Voice: VoxCPM2, local](https://img.shields.io/badge/voice-VoxCPM2_·_local-5f9c5c?style=flat-square)](#voices)
 [![Sizes](https://img.shields.io/badge/sizes-9%3A16_·_1%3A1_·_4%3A5_·_16%3A9-52d6c4?style=flat-square)](#sizes)
 
-[**Install**](#install) · [**Make a video**](#make-a-video) · [**Voices**](#voices) · [**Formats**](#story-formats) · [**Tools**](#tools) · [**Credits**](docs/CREDITS.md)
+[**Install**](#install) · [**Make a video**](#make-a-video) · [**Voices**](#voices) · [**Formats**](#story-formats) · [**Tools**](#tools)
 
 <br>
 
@@ -244,7 +244,7 @@ The one-take format is new: its template passes every check, but no full piece h
 
 ## License
 
-[MIT](LICENSE). Built on [animate](https://github.com/cth9191/animate) by cth9191; see [credits](docs/CREDITS.md).
+[MIT](LICENSE). See [credits](docs/CREDITS.md).
 
 <div align="center">
 <br>
