@@ -110,9 +110,24 @@ Every piece is one choice from each column. Read a format as a proven combinatio
 - **Fits:** feature launches ("it can now …" → proof).
 - **Status:** one example studied; treat as a sketch.
 
+### F9. One take (every beat carried into the next)
+- **Engine:** any explainer or launch story told as one continuous shot: there are beats, but no scene ever *replaces* another. The failure it fixes is the slideshow (title card, fade, screen, fade, card, fade, logo), where each shot looks fine and the whole still reads as slides because nothing connects one beat to the next.
+- **Stage: carries.** At every boundary something on screen survives and visibly becomes the next beat. Three ways, cheapest first:
+  - **travel on one sheet:** the beats are stations on one large drawing and the camera moves between them (`pieceCam` with `springTrack`); no era boundary at all.
+  - **push through** (`kind: 'through'`): the camera pushes into an object (a phone screen, a card, a window, a mug of coffee) and the next world is already inside its outline. Best when the next beat is "inside" this one.
+  - **match** (`kind: 'match'`): the old world closes around one object while the new world appears around it, and the object morphs into its counterpart there (a card becomes a stamp, a bar becomes a road). Best when the same idea changes form.
+  - The paper morph (no `kind`) is allowed once, as a breath; a hard cut is not allowed at all.
+- **Camera:** always travelling, slowly. Hold a reading beat by drifting (a 2–4% push), never by parking.
+- **Clock:** voice-led (a carry starts on the sentence end and lands on the next line's first stressed word) or the 120 BPM grid (carries centred on 8ths).
+- **Device:** the last beat pulls back to reveal that every beat was part of one picture (the sheet, the desk, the product), or the final carry lands back in the opening frame.
+- **Fits:** product launch films and feature demos; a process explained as one machine; any explainer whose beats are steps of one thing.
+- **Checks (`format: 'F9'`):** 0 hard cuts (listed or measured); every shot boundary is in `TIMELINE.carries` (the carries' `tc`s); ≥ 2 carries; nothing parked for more than 2.5s.
+- **Inspired by** [onetake](https://github.com/feitangyuan/onetake) by feitangyuan, which argues for motion where each beat grows out of the one before. animate-pls implements the idea with its own kit; no code or text from onetake is used.
+- **Status:** new: the template `templates/one-take/` passes its checks; no full piece yet.
+
 ## Format-specific rules (don't apply them everywhere)
 
-1. **"Cuts land on the beat grid"** holds for beat-cut formats (F3, F4, F5, F7). F1, F2 and F6 have few or no hard cuts; with a voice the clock is the sentence.
+1. **"Cuts land on the beat grid"** holds for beat-cut formats (F3, F4, F5, F7). F1, F2, F6 and F9 have few or no hard cuts; with a voice the clock is the sentence.
 2. **"The journey is the fastest section"** — F1 with even stations never accelerates; F6 decelerates; F4's fastest stretch is a 2s rush just before the deadline.
 3. **"Travel is one continuous camera move"** — in F1 the whole piece is travel; F2 may have no camera at all.
 4. **"A handwritten title at the end"** — a signature, not structure.

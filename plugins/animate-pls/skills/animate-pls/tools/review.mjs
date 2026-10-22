@@ -112,6 +112,10 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
 // ---- contact sheets beside references
 const FONTFILE = ['C:/Windows/Fonts/consolab.ttf', '/System/Library/Fonts/Menlo.ttc', '/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf'].find((f) => fs.existsSync(f));
 const font = FONTFILE ? `fontfile='${FONTFILE.replace(':', '\\:')}'` : "font='monospace'";
+// some ffmpeg builds (e.g. without freetype) have no drawtext: the sheets then go without their time labels
+const DRAWTEXT = /\bdrawtext\b/.test(spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout || '');
+if (!DRAWTEXT) console.log('note: this ffmpeg has no drawtext filter, so the contact sheets have no time labels (frame order is left to right, 0.25s apart)');
+const label = (expr) => (DRAWTEXT ? expr : 'null');
 const cellW = VERTICAL ? 270 : 360, cellH = Math.round((cellW * FH) / FW / 2) * 2, cols = 4;
 const labelSize = Math.round(((VERTICAL ? 60 : 40) * FW) / 1080);
 const safeBoxes = VERTICAL
@@ -126,7 +130,7 @@ for (const shot of T.shots) {
   const sheet = path.join(REVIEW, `${tag}-sheet.jpg`);
   const sel = uniq.map((f) => `eq(n\\,${f})`).join('+');
   let r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(T.fps), '-start_number', '0', '-i', path.join(ROOT, 'frames', 'f%04d.png'),
-    '-vf', `${safeBoxes}drawtext=${font}:text='%{pts\\:hms}  f%{n}':x=14:y=14:fontsize=${labelSize}:fontcolor=yellow:box=1:boxcolor=black@0.65:boxborderw=6,select='${sel}',scale=${cellW}:${cellH},tile=${cols}x${rows}`,
+    '-vf', `${safeBoxes}${label(`drawtext=${font}:text='%{pts\\:hms}  f%{n}':x=14:y=14:fontsize=${labelSize}:fontcolor=yellow:box=1:boxcolor=black@0.65:boxborderw=6`)},select='${sel}',scale=${cellW}:${cellH},tile=${cols}x${rows}`,
     '-frames:v', '1', '-q:v', '3', sheet], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('sheet failed for shot ' + shot.id);
   const refs = (REF_FOR[shot.id] || []).map(refPath).filter((p) => fs.existsSync(p));
@@ -143,7 +147,7 @@ for (const shot of T.shots) {
     const scaled = refs.map((_, i) => `[${i + 1}:v]scale=540:${probeH[i]}[r${i}]`).join(';');
     const stack = refs.length > 1 ? `${refs.map((_, i) => `[r${i}]`).join('')}vstack=inputs=${refs.length}` : '[r0]null';
     r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', sheet, ...refs.flatMap((p) => ['-i', p]), '-filter_complex',
-      `[0:v]pad=${sheetW}:${h}:0:0:color=0x202020[s];${scaled};${stack},pad=540:${h}:0:0:color=0x202020,drawtext=${font}:text='REFERENCE':x=12:y=12:fontsize=34:fontcolor=white:box=1:boxcolor=black@0.7[refs];[s][refs]hstack=inputs=2`,
+      `[0:v]pad=${sheetW}:${h}:0:0:color=0x202020[s];${scaled};${stack},pad=540:${h}:0:0:color=0x202020,${label(`drawtext=${font}:text='REFERENCE':x=12:y=12:fontsize=34:fontcolor=white:box=1:boxcolor=black@0.7`)}[refs];[s][refs]hstack=inputs=2`,
       '-frames:v', '1', '-q:v', '3', out], { stdio: 'inherit' });
     if (r.status !== 0) throw new Error('side-by-side failed for shot ' + shot.id);
   }
@@ -280,7 +284,30 @@ if (info.anchor) {
   console.log(`\nANCHOR (${A.t0}-${A.t1}s, target ${A.x},${A.y} +-${tol}px): ${within}/${offs.length} frames on the spot (${(share * 100).toFixed(0)}%), ${offs.length - present.length} frames absent, max offset ${present.length ? Math.max(...present).toFixed(0) : '-'}px`);
   console.log(`anchor: ${share >= (A.minShare ?? 0.95) ? 'PASS' : 'FAIL'} (needs >= ${((A.minShare ?? 0.95) * 100).toFixed(0)}%)`);
 }
+// stretches of at least minS seconds where the picture barely changes over 0.5s (a quarter of the piece's median
+// change, so line boil on 2s doesn't count as motion); exempt = skip the silence acts
+function stillStretches(minS, exempt) {
+  const step = Math.max(1, Math.round(T.fps / 4)), lag = Math.round(T.fps / 2), pts = [];
+  for (let f = lag; f < nFrames; f += step) pts.push([f, frameDiff(f, f - lag)]);
+  const sorted = pts.map((p) => p[1]).sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)] || 0;
+  const thr = Math.max(0.8, 0.25 * med), held = exempt ? (T.acts || []).filter((a) => a.role === 'silence') : [];
+  const runs = []; let r0 = null, longest = 0;
+  for (const [f, d] of [...pts, [nFrames, 1e9]]) {
+    const t = f / T.fps, still = d < thr && !held.some((a) => t >= a.t0 && t < a.t1);
+    if (still && r0 == null) r0 = t; else if (!still && r0 != null) { longest = Math.max(longest, t - r0); if (t - r0 >= minS) runs.push([r0, t]); r0 = null; }
+  }
+  return { runs, longest, step, med, thr };
+}
 // ---- format checks (grammar/FORMATS.md): the provable checks on the format's card
+// hard cuts: coarse 8x8-px cells of the 96-wide frames; a cut changes most cells at once.
+// limit(f) = the share of cells that counts as a cut at frame f (default: half)
+function hardCutScan(limit = () => 0.5) {
+  const CB = 8, cw = Math.floor(SW / CB), ch = Math.floor(SH / CB);
+  const cells = (f) => { const c = new Float32Array(cw * ch); for (let y = 0; y < ch * CB; y++) for (let x = 0; x < cw * CB; x++) c[Math.floor(y / CB) * cw + Math.floor(x / CB)] += raw[f * PX + y * SW + x] / (CB * CB); return c; };
+  let prev = cells(0), maxShare = 0; const hard = [];
+  for (let f = 1; f < nFrames; f++) { const cur = cells(f); let n = 0; for (let i = 0; i < cur.length; i++) if (Math.abs(cur[i] - prev[i]) > 40) n++; const sh = n / cur.length; maxShare = Math.max(maxShare, sh); if (sh > limit(f)) hard.push(f); prev = cur; }
+  return { hard, maxShare };
+}
 if (T.format === 'F4') {
   const SR = 8000, WIN = SR / 10;
   const pcm = spawnSync('ffmpeg', ['-v', 'error', '-i', path.join(ROOT, 'renders', 'audio.wav'), '-ac', '1', '-ar', String(SR), '-f', 's16le', '-'], { maxBuffer: 1 << 28 }).stdout;
@@ -310,11 +337,7 @@ if (T.format === 'F2') {
   const db = [];
   for (let o = 0; o + WIN * 2 <= pcm.length; o += WIN * 2) { let s = 0; for (let i = 0; i < WIN; i++) { const v = pcm.readInt16LE(o + i * 2) / 32768; s += v * v; } db.push(10 * Math.log10(s / WIN + 1e-12)); }
   const e8 = 30 / (T.bpm || 100), k = SW / FW;
-  // hard cuts: coarse 8x8-px cells of the 96-wide frames; a cut changes most cells at once
-  const CB = 8, cw = Math.floor(SW / CB), ch = Math.floor(SH / CB);
-  const cells = (f) => { const c = new Float32Array(cw * ch); for (let y = 0; y < ch * CB; y++) for (let x = 0; x < cw * CB; x++) c[Math.floor(y / CB) * cw + Math.floor(x / CB)] += raw[f * PX + y * SW + x] / (CB * CB); return c; };
-  let prev = cells(0), hard = [], maxShare = 0;
-  for (let f = 1; f < nFrames; f++) { const cur = cells(f); let n = 0; for (let i = 0; i < cur.length; i++) if (Math.abs(cur[i] - prev[i]) > 40) n++; const sh = n / cur.length; maxShare = Math.max(maxShare, sh); if (sh > 0.5) hard.push(f); prev = cur; }
+  const { hard, maxShare } = hardCutScan();
   // the stage: pixels outside the screen and text boxes barely change from frame to frame
   const ign = (T.stage?.ignore || []).map(([x, y, w, h]) => [x * k, y * k, (x + w) * k, (y + h) * k]);
   const mask = []; for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) if (!ign.some(([a, b, c, d]) => x >= a - 1 && x <= c + 1 && y >= b - 1 && y <= d + 1)) mask.push(y * SW + x);
@@ -337,6 +360,24 @@ if (T.format === 'F2') {
   console.log('\nFORMAT F2 (fixed-stage chronology) checks, grammar/FORMATS.md');
   for (const [ok, text] of fc) console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${text}`);
   console.log(`format F2: ${fc.every(([ok]) => ok) ? 'PASS' : 'FAIL'} (${fc.filter(([ok]) => ok).length}/${fc.length})`);
+}
+if (T.format === 'F9' || T.format === 'one-take') {
+  const carries = T.carries || T.morphs || [];
+  // inside a carry (1s before its tc to 0.5s after) a fast push can sweep half the frame in one step; only a change
+  // of > 85% of the cells (the whole picture at once) reads as a cut there
+  const inCarry = (f) => carries.some((c) => f / T.fps >= c - 1.0 && f / T.fps <= c + 0.5);
+  const { hard, maxShare } = hardCutScan((f) => (inCarry(f) ? 0.85 : 0.5));
+  const bounds = T.shots.slice(1).map((s) => s.t0), loose = bounds.filter((b) => !carries.some((c) => Math.abs(c - b) < 1e-6));
+  const { longest } = stillStretches(2.5, false);   // a one-take keeps travelling, even through a hush
+  const fc = [
+    [T.cuts.length === 0 && hard.length === 0, `no hard cuts: ${T.cuts.length} listed, ${hard.length} frames change > 50% of coarse cells (> 85% inside a carry)${hard.length ? ' (' + hard.slice(0, 8).join(', ') + ')' : ''} (max ${(maxShare * 100).toFixed(0)}%)`],
+    [loose.length === 0, `every beat boundary is carried: ${bounds.length - loose.length}/${bounds.length}${loose.length ? ' (not carried: ' + loose.join(', ') + 's)' : ''}`],
+    [carries.length >= 2, `carries: ${carries.length} (needs >= 2)`],
+    [longest <= 2.5, `never parked: longest still stretch ${longest.toFixed(2)}s, judged like DEAD BEATS (needs <= 2.5s)`],
+  ];
+  console.log('\nFORMAT F9 (one take) checks, grammar/FORMATS.md');
+  for (const [ok, text] of fc) console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${text}`);
+  console.log(`format F9: ${fc.every(([ok]) => ok) ? 'PASS' : 'FAIL'} (${fc.filter(([ok]) => ok).length}/${fc.length})`);
 }
 // ---- text: cut off, overlapping, under the phone UI (every string drawn, traced to screen)
 printTextCheck(TXT, PIECE.review?.textIgnore || []);
@@ -362,16 +403,8 @@ if (fs.existsSync(WAV)) {
 }
 // ---- dead beats: something new should happen every 2-4s; flag stretches where the picture barely changes
 {
-  const step = Math.max(1, Math.round(T.fps / 4)), lag = Math.round(T.fps / 2), pts = [];
-  for (let f = lag; f < nFrames; f += step) pts.push([f, frameDiff(f, f - lag)]);
-  const sorted = pts.map((p) => p[1]).sort((a, b) => a - b), med = sorted[Math.floor(sorted.length / 2)] || 0;
-  const thr = Math.max(0.8, 0.25 * med), deadMax = PIECE.review?.deadMax ?? 3.0;
-  const held = (T.acts || []).filter((a) => a.role === 'silence');
-  const runs = []; let r0 = null;
-  for (const [f, d] of [...pts, [nFrames, 1e9]]) {
-    const t = f / T.fps, still = d < thr && !held.some((a) => t >= a.t0 && t < a.t1);
-    if (still && r0 == null) r0 = t; else if (!still && r0 != null) { if (t - r0 >= deadMax) runs.push([r0, t]); r0 = null; }
-  }
+  const deadMax = PIECE.review?.deadMax ?? 3.0;
+  const { runs, step, med, thr } = stillStretches(deadMax, true);
   console.log(`\nDEAD BEATS (the picture's change over 0.5s, every ${(step / T.fps).toFixed(2)}s; median ${med.toFixed(2)}, "still" below ${thr.toFixed(2)}; silence acts are exempt)`);
   for (const [a, b] of runs) console.log(`  WARN  ${a.toFixed(2)}-${b.toFixed(2)}s: ${(b - a).toFixed(1)}s with nothing new on screen (deadMax ${deadMax}s) — add a move, a reveal or a cut`);
   console.log(`dead beats: ${runs.length ? 'WARN' : 'PASS'} (${runs.length} stretch${runs.length === 1 ? '' : 'es'} over ${deadMax}s)`);

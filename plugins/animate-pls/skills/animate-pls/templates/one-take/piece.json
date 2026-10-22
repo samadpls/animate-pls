@@ -1,0 +1,9 @@
+{
+  "name": "one-take",
+  "title": "One take: an idea, built, shipped",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 10.0, "frames": 240 },
+  "formats": ["1:1"],
+  "storyFormat": "F9 one take (3 beats, 2 carries: through + match, no cuts)",
+  "style": "crosshatch",
+  "review": { "safe": { "top": 60, "bottom": 60, "right": 60 }, "refs": {} }
+}

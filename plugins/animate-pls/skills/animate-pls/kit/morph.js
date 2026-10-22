@@ -11,6 +11,15 @@
 //    grow   [tc+m, tc+d]      the new era opens out of a window shaped like the counterpart
 //    d = the bridge's half-length (default 0.6s, so a bridge costs 1.2s), m = the morph's half (default 0.2s, or d/3 when d is set).
 //    Short pieces: { tc, d: 0.4 } (0.8s) or fewer bridges — see craft.md -> Transitions.
+//  Carries (the one-take format, grammar/FORMATS.md F9): no blank paper between eras; something on screen survives
+//  and becomes the next beat. Set `kind` on the bridge:
+//    kind: 'through'  [tc-d, tc]   the camera pushes into A's object (a screen, a card, a window) and the next era is
+//                                  already inside its outline, so the object opens into it; A() only
+//    kind: 'match'    [tc-d, tc-m] the old era closes around A's object while the new era appears around it, then
+//                     [tc-m, tc+m] the object morphs into its counterpart B in the new era (give both as rounded
+//                     rects, { R: [x, y, w, h, r], c }, and the box reflows instead of morphing by angle)
+//    `id` names the carried object: while it is carried, carrying(id) is true, so a scene can skip drawing its own
+//    copy of it, and carryIn(id) (0..1) fades the new era's counterpart in as the carry lands.
 //  Era boundaries WITHOUT a bridge are hard cuts (keep at most one: the slam).
 //
 //  The piece defines (in its head / src):
@@ -38,7 +47,9 @@ function starPts(x, y, r, n, r0 = -Math.PI / 2, m = 96) {
   return P;
 }
 const SP = (x, y, r, n) => ({ spark: [x, y, r, n] });
-const shapeOf = (s) => (s.spark ? { P: (STYLE.heroPts || starPts)(...s.spark), c: STYLE.heroColor, spark: s.spark } : s);
+// a shape is { P: points, c }, a spark SP(...), or a rounded rect { R: [x, y, w, h, r], c } (rect to rect reflows cleanly)
+const shapeOf = (s) => (s.spark ? { P: (STYLE.heroPts || starPts)(...s.spark), c: STYLE.heroColor, spark: s.spark } : s.R && !s.P ? { ...s, P: rrectPts(...s.R) } : s);
+const camRect = ([x, y, w, h, r = 0], c) => [c.z * x + c.tx, c.z * y + c.ty, c.z * w, c.z * h, c.z * r];
 function byAngle(P, m = 96) {   // resample a closed outline to m points by angle around its centroid
   const c = P.reduce((a, p) => [a[0] + p[0] / P.length, a[1] + p[1] / P.length], [0, 0]), Q = resample(P, true, 4), out = [];
   for (let i = 0; i < m; i++) {
@@ -59,12 +70,17 @@ const scaled = (P, c, k) => P.map(([x, y]) => [c[0] + (x - c[0]) * k, c[1] + (y 
 // ---- layers and windows
 const LAYER = [];
 function layer(i) { if (!LAYER[i]) { const c = document.createElement('canvas'); c.width = W; c.height = H; LAYER[i] = c; } return LAYER[i]; }
-function renderEra(e, target) {   // draws era e into target; returns its overlay queue (year tag, caption)
+// zoom = { k, c }: an extra zoom by k about screen point c on top of the era's camera (the carries push through with it)
+function renderEra(e, target, zoom) {   // draws era e into target; returns its overlay queue (year tag, caption)
   const saved = ctx; ctx = target.getContext('2d');
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.setLineDash([]);
   ctx.fillStyle = STYLE.paper; ctx.fillRect(0, 0, W, H);   // a clean sheet every frame: nothing carries over between frames
-  const cam = camAt(e, TT); ctx.setTransform(cam.z, 0, 0, cam.z, cam.tx, cam.ty);
+  let cam = camAt(e, TT);
+  if (zoom) cam = { z: cam.z * zoom.k, tx: zoom.c[0] + zoom.k * (cam.tx - zoom.c[0]), ty: zoom.c[1] + zoom.k * (cam.ty - zoom.c[1]) };
+  ctx.setTransform(cam.z, 0, 0, cam.z, cam.tx, cam.ty);
+  const keepE0 = E0; E0 = ERA_LIST[e][0];   // the era's own clock, also when a carry draws it before it starts
   DEFER = []; ERA_LIST[e][2](); const q = DEFER; DEFER = null;
+  E0 = keepE0;
   ctx.restore(); ctx = saved;
   return q;
 }
@@ -74,6 +90,51 @@ function shotAtFrame(fr) {
   return TIMELINE.shots[TIMELINE.shots.length - 1];
 }
 const eraAt = (t) => ERA_LIST.findIndex(([a, b]) => t >= a - 1e-6 && t < b - 1e-6);
+// ---- carries: the object survives the boundary (see the header)
+let CARRY = null;
+const carrying = (id) => !!CARRY && CARRY.id === id;
+// how much of the carried object's counterpart the new era should draw: 0 while the carry holds it, 1 once it has landed
+function carryIn(id) {
+  if (!carrying(id)) return 1;
+  const m = CARRY.m ?? (CARRY.d != null ? CARRY.d / 3 : 0.2);
+  return CARRY.kind === 'through' ? 0 : EZ.i2(seg(TT, CARRY.tc + m * 0.4, CARRY.tc + m));
+}
+const bboxOf = (P) => { const xs = P.map((p) => p[0]), ys = P.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+function carryThrough(tr, ea, eb, sa, PA, D) {
+  // A zooms about its object's centre until the object covers the frame; inside the object the next era starts
+  // cover-fitted to it and grows to full size by tc (in log space, so the push keeps one speed feel)
+  const u = EZ.io(seg(TT, tr.tc - D, tr.tc)), { c, kmax } = maskK(PA), k = Math.exp(Math.log(kmax) * u);
+  const [x0, y0, x1, y1] = bboxOf(PA), s0 = Math.min(1, Math.max((x1 - x0) / W, (y1 - y0) / H)), s = Math.exp(Math.log(s0) * (1 - u));
+  const q = Math.abs(1 - s0) < 1e-3 ? c : [(c[0] - s0 * W / 2) / (1 - s0), (c[1] - s0 * H / 2) / (1 - s0)];   // the point B's zoom keeps still
+  const qa = renderEra(ea, layer(0), { k, c }); ctx.drawImage(layer(0), 0, 0);
+  if (u < 0.35) flush(qa, ea);
+  renderEra(eb, layer(1), { k: s, c: q });
+  STYLE.window(scaled(PA, c, k), 'th' + tr.tc, layer(1), { c: sa.c, u, phase: 'through', eraA: ea, eraB: eb });
+}
+function carryMatch(tr, ea, eb, sa, sb, PA, PB, D, M) {
+  const qb = renderEra(eb, layer(1));
+  ctx.drawImage(layer(1), 0, 0);
+  if (TT < tr.tc - M) {   // the old era closes around its object; the new one is already there around it
+    const u = EZ.i2(seg(TT, tr.tc - D, tr.tc - M)), { c, kmax } = maskK(PA), k = Math.exp(lerp(Math.log(kmax), 0, u));
+    const qa = renderEra(ea, layer(0));
+    STYLE.window(scaled(PA, c, k), 'ma' + tr.tc, layer(0), { c: sa.c, u, phase: 'shrink', eraA: ea, eraB: eb });
+    flush(qa, ea);
+  } else {                // the object becomes its counterpart, then hands over to the new era's own drawing of it
+    const u = EZ.io(seg(TT, tr.tc - M, tr.tc + M));
+    let P;
+    if (sa.R && sb.R) {   // rect to rect: the box itself reflows (no in-between bow-tie)
+      const a = camRect(sa.R, camAt(ea, TT)), b = camRect(sb.R, camAt(eb, TT));
+      P = rrectPts(...a.map((v, i) => lerp(v, b[i], u)));
+    } else {
+      const A2 = byAngle(PA), B2 = byAngle(PB);
+      P = A2.P.map((p, i) => [lerp(p[0], B2.P[i][0], u), lerp(p[1], B2.P[i][1], u)]);
+    }
+    ctx.save(); ctx.globalAlpha = 1 - EZ.i2(seg(u, 0.7, 1));
+    STYLE.blob(P, mixHex(sa.c, sb.c, u), 'mm' + tr.tc, u, { eraA: ea, eraB: eb, phase: 'morph' });
+    ctx.restore();
+    flush(qb, eb);
+  }
+}
 // renderFrame(t, canvas, sub): sub = true draws the exact time t between frames (motion blur sub-frames, styles on 1s)
 function renderFrame(t, canvas, sub) {
   const cv = canvas || document.getElementById('c');
@@ -89,15 +150,20 @@ function renderFrame(t, canvas, sub) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setLineDash([]); ctx.filter = 'none';
   SPARK_AT = null;
   const bd = (r) => r.d ?? 0.6, bm = (r) => r.m ?? (r.d != null ? r.d / 3 : 0.2);
-  const tr = BRIDGES.find((r) => TT >= r.tc - bd(r) - 1e-6 && TT < r.tc + bd(r) - 1e-6);
+  // a carry ends at tc ('through') or tc + m ('match'); after that the new era draws on its own
+  const end = (r) => r.tc + (r.kind === 'through' ? 0 : r.kind === 'match' ? bm(r) : bd(r));
+  const tr = BRIDGES.find((r) => TT >= r.tc - bd(r) - 1e-6 && TT < end(r) - 1e-6);
+  CARRY = tr && tr.kind ? tr : null;
   if (!tr) {
     const q = renderEra(e, layer(0)); ctx.drawImage(layer(0), 0, 0); flush(q, e);
   } else {
     const ea = eraAt(tr.tc - 0.01), eb = eraAt(tr.tc + 0.01);
-    const sa = shapeOf(tr.A()), sb = shapeOf(tr.B());
+    const sa = shapeOf(tr.A()), sb = tr.B ? shapeOf(tr.B()) : sa;
     const PA = camPts(sa.P, camAt(ea, TT)), PB = camPts(sb.P, camAt(eb, TT));
     const D = bd(tr), M = bm(tr);
-    if (TT < tr.tc - M) {
+    if (tr.kind === 'through') carryThrough(tr, ea, eb, sa, PA, D);
+    else if (tr.kind === 'match') carryMatch(tr, ea, eb, sa, sb, PA, PB, D, M);
+    else if (TT < tr.tc - M) {
       const u = EZ.i2(seg(TT, tr.tc - D, tr.tc - M)), { c, kmax } = maskK(PA), k = Math.exp(lerp(Math.log(kmax), 0, u));
       STYLE.backdrop(mixHex(ERA_BG[ea], STYLE.paper, 0.5 + u * 0.5), { eraA: ea, eraB: eb, u, phase: 'shrink' });
       const q = renderEra(ea, layer(0));
@@ -122,6 +188,7 @@ function renderFrame(t, canvas, sub) {
       flush(q, eb);
     }
   }
+  CARRY = null;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (STYLE.post) STYLE.post();
   ctx.restore();

@@ -1,4 +1,5 @@
-// test tile: render chosen frames into a grid (each 270x480) with the phone-UI safe zones drawn in red; print timings +
+// test tile: render chosen frames into a grid (270x480 cells for 9:16, 360 wide for 1:1 / 4:5 / 16:9) with the safe
+// zones drawn in red (the phone UI on 9:16, TIMELINE.safe otherwise); print timings +
 // determinism (every frame rendered twice, the second pass in reverse order; any difference is listed)
 // usage: node tools/tile.mjs <piece dir> out.png f0 f1 f2 ... [--format 1:1]   (frame numbers at TIMELINE.fps)
 //        (the older form PIECE=<piece dir> node tools/tile.mjs out.png f0 ... still works)
@@ -25,14 +26,20 @@ await p.goto(URL);
 await p.waitForFunction(() => window.TIMELINE && window.renderFrame, null, { timeout: 30000 });
 { const fo = await p.evaluate(() => window.FONTS_OK); if (fo !== undefined) console.log('fonts ok:', fo); }
 const res = await p.evaluate(async (frames) => {
-  const cols = Math.min(6, frames.length), rows = Math.ceil(frames.length / cols), s = 0.25;
-  const g = document.createElement('canvas'); g.width = cols * 270; g.height = rows * 480; const x = g.getContext('2d');
-  const src = document.getElementById('c'); const ms = [], first = [];
+  const src = document.getElementById('c'), portrait = src.height > src.width;
+  // cells keep the canvas's shape: 270x480 for 9:16, 360 wide for square and landscape pieces
+  const cw = portrait ? 270 : 360, ch = Math.round(cw * src.height / src.width), s = cw / src.width;
+  const safe = window.TIMELINE.safe || { bottom: 380, right: 130 };
+  const cols = Math.min(6, frames.length), rows = Math.ceil(frames.length / cols);
+  const g = document.createElement('canvas'); g.width = cols * cw; g.height = rows * ch; const x = g.getContext('2d');
+  const ms = [], first = [];
   for (let i = 0; i < frames.length; i++) {
     const t0 = performance.now(); window.renderFrame(frames[i] / window.TIMELINE.fps); ms.push(performance.now() - t0);
-    const cx = (i % cols) * 270, cy = Math.floor(i / cols) * 480;
-    first.push(src.toDataURL()); x.drawImage(src, cx, cy, 270, 480);
-    x.fillStyle = 'rgba(255,0,0,0.18)'; x.fillRect(cx, cy + 1540 * s, 270, 380 * s); x.fillRect(cx + 950 * s, cy, 130 * s, 480);
+    const cx = (i % cols) * cw, cy = Math.floor(i / cols) * ch;
+    first.push(src.toDataURL()); x.drawImage(src, cx, cy, cw, ch);
+    x.fillStyle = 'rgba(255,0,0,0.18)';
+    if (portrait) { x.fillRect(cx, cy + 1540 * s, cw, 380 * s); x.fillRect(cx + 950 * s, cy, 130 * s, ch); }   // the phone UI on 9:16
+    else { x.fillRect(cx, cy + ch - safe.bottom * s, cw, safe.bottom * s); x.fillRect(cx + cw - safe.right * s, cy, safe.right * s, ch); }
     x.fillStyle = '#000'; x.fillRect(cx, cy, 44, 16); x.fillStyle = '#fff'; x.font = '12px monospace'; x.fillText('f' + frames[i], cx + 3, cy + 12);
   }
   // determinism: every frame again, in reverse order (so each follows a different frame), compare pixels

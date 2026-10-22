@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One take</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  ONE TAKE — 1:1, 10.0s @ 120 BPM, 24fps, crosshatch. F9: no scene ever replaces another.
+//  A sketched app card on the desk opens into the machine (a push through the card); the build bar there
+//  becomes the phone's screen back on the desk (a match); the camera pulls back to the sketch beside the real thing.
+//  The constant: the card. Cyan = built in code. The silence sits before the "shipped" stamp, the loudest hit.
+//  Build: node <skill>/tools/build.mjs <skill>/templates/one-take
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 10.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts: Windows, macOS, Linux
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneSketch()], [3, 6, () => sceneBuild()], [6, 10, () => sceneShipped()]];
+const SHOTS = [
+  ['sketch',  0, 0.0, 3.0,  'an idea: a card sketched in pencil'],
+  ['build',   1, 3.0, 6.0,  'inside the card: built in code'],
+  ['shipped', 2, 6.0, 10.0, 'the bar becomes the screen: shipped'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'F9',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  carries: [3.0, 6.0],
+  cues: { sketch: 0.4, type: 3.4, fill: 3.9, full: 5.25, hush: 6.9, stamp: 7.5 },
+  acts: [
+    { name: '1 Sketch',  role: 'build',   t0: 0.0, t1: 3.0 },
+    { name: '2 Build',   role: 'journey', t0: 3.0, t1: 6.9 },
+    { name: '3 Hush',    role: 'silence', t0: 6.9, t1: 7.5 },
+    { name: '4 Shipped', role: 'gift',    t0: 7.5, t1: 8.6 },
+    { name: '5 Pull back', role: 'goodbye', t0: 8.6, t1: 10.0 },
+  ],
+  board: [
+    { t: 2.0, title: 'an idea, sketched', sound: 'pencil scratches', next: 'push through the card' },
+    { t: 4.6, title: 'built in code', sound: 'typing, rising plucks', next: 'the bar becomes the screen' },
+    { t: 7.9, title: 'shipped', sound: 'silence, then the stamp', next: 'pull back' },
+    { t: 9.6, title: 'the sketch beside the real thing', sound: 'warm pad', next: 'end' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;
