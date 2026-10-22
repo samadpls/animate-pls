@@ -188,11 +188,16 @@ if (!flag('no-mux') && !onlyAudio && full) {
     const unit = meta.height / 288, vertical = meta.height > meta.width;
     const marginV = Math.round((vertical ? 470 : 70) / unit), fontSize = Math.round((vertical ? 64 : 46) / unit);
     const style = `Fontname=${process.platform === 'win32' ? 'Consolas' : process.platform === 'darwin' ? 'Menlo' : 'DejaVu Sans Mono'},Fontsize=${fontSize},PrimaryColour=&H00FFFFFF,BackColour=&H99000000,BorderStyle=3,Outline=6,Shadow=0,Alignment=2,MarginV=${marginV}`;
-    const r2 = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', 'final.mp4',
-      '-vf', `subtitles=narration.srt:force_style='${style}'`, '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'copy', 'final-captions.mp4'],
-    { cwd: RENDERS, stdio: 'inherit' });
-    if (r2.status !== 0) { console.error('caption burn failed'); process.exit(1); }
-    console.log('wrote', path.join(RENDERS, 'final-captions.mp4'), '(narration preview)');
+    // some ffmpeg builds (no libass) have no subtitles filter: keep the .srt (platforms take it as a captions file) and go on
+    const hasSubs = /\bsubtitles\b/.test(spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout || '');
+    if (!hasSubs) console.log(`wrote ${path.join(RENDERS, 'narration.srt')}; no burned-in preview (this ffmpeg has no subtitles filter)`);
+    else {
+      const r2 = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', 'final.mp4',
+        '-vf', `subtitles=narration.srt:force_style='${style}'`, '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'copy', 'final-captions.mp4'],
+      { cwd: RENDERS, stdio: 'inherit' });
+      if (r2.status !== 0) { console.error('caption burn failed'); process.exit(1); }
+      console.log('wrote', path.join(RENDERS, 'final-captions.mp4'), '(narration preview)');
+    }
   }
 }
 // --only-audio: swap the new score into the existing master without re-rendering frames
