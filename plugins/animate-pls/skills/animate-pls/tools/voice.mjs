@@ -75,7 +75,10 @@ const norm = (w) => w.toLowerCase().replace(/[^a-z0-9]/g, '');
 let heard = null;
 const py = spawnSync(python(), [path.join(HERE, 'voice_words.py'), wav, '--model', opt('--model', 'small.en')], { maxBuffer: 1 << 26 });
 if (py.status === 0) { try { heard = JSON.parse(py.stdout.toString().trim().split('\n').pop()); } catch { heard = null; } }
-if (!heard) console.warn('word times: faster-whisper unavailable (node tools/voice-setup.mjs) — estimating from the letters');
+if (!heard) {
+  const why = (py.stderr || '').toString().trim().split('\n').filter(Boolean).pop();   // the last line of the Python error says what failed
+  console.warn(`word times: faster-whisper unavailable (node tools/voice-setup.mjs) — estimating from the letters${why ? `\n  reason: ${why.slice(0, 200)}` : ''}`);
+}
 let matched = 0, totalWords = 0;
 for (const L of lines) {
   const words = L.text.split(/\s+/).filter((w) => norm(w));

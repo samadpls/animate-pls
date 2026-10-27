@@ -4,12 +4,12 @@
     "name": "samadpls",
     "url": "https://github.com/samadpls"
   },
-  "description": "Animated explainer videos made in code, with a free local voice-over in your own voice. For Claude Code, Codex and any agent that reads skills.",
+  "description": "Animated videos made in code, narrated in your own voice, for free. For Claude Code, Codex, Cursor and any agent that reads skills.",
   "plugins": [
     {
       "name": "animate-pls",
       "source": "./plugins/animate-pls",
-      "description": "Short procedural animations in any style (seven built in, or matched from your references) as single-file canvas videos with a free VoxCPM2 voice-over cloned from your own recording, a one-take format with no cuts, and MP4s in 9:16, 1:1, 4:5 and 16:9. Built through story, look and storyboard check-ins."
+      "description": "Animated videos made in code, on your own machine: explainers, product films, reels and edits of your own screen recordings, in 20 one-word designs (cutout, clay, comic, chalkboard, linocut, watercolor, terminal, poster and more), with word-by-word captions and an optional free local voice-over cloned from your own recording. MP4 in 9:16, 1:1, 4:5 and 16:9."
     }
   ]
 }

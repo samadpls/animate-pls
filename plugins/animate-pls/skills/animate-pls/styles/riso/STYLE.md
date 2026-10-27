@@ -1,6 +1,6 @@
 # Riso
 
-![sample](sample.png)
+![sample](sample.jpg)
 
 A three-ink risograph print on cream paper: halftone screens at their own angles, overprints instead of mixed colours, plates a few pixels off register, ink dropouts that sparkle in the darks. Flat, bright, a little worn, on 2s.
 

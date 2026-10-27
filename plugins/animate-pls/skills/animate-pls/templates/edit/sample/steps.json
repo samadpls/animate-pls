@@ -1,0 +1,18 @@
+{
+  "url": "studio.html",
+  "viewport": [1200, 800],
+  "scale": 2,
+  "cursor": [760, 360],
+  "steps": [
+    { "pause": 0.4 },
+    { "type": "#q", "text": "/animate-pls how DNS works, 30s explainer, crosshatch, 1:1", "cps": 26 },
+    { "press": "Enter" },
+    { "pause": 1.4 },
+    { "mark": "#story" },
+    { "click": "#approve", "after": 0.6 },
+    { "mark": "#log" },
+    { "pause": 1.8 },
+    { "mark": "#stage" },
+    { "pause": 2.4 }
+  ]
+}

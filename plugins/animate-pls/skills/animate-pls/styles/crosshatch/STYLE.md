@@ -1,6 +1,6 @@
 # Crosshatch ink
 
-![sample](sample.png)
+![sample](sample.jpg)
 
 A sketchy ink line that boils on 2s, crosshatch and coloured-pencil shading clipped inside shapes, stipple, paper grain. Warm cream paper and wood by day; navy "inside the computer" worlds with periwinkle lines and glowing accents.
 

@@ -1,6 +1,6 @@
 # Pixel
 
-![sample](sample.png)
+![sample](sample.jpg)
 
 Pixel art. Every picture is drawn at a low internal resolution — 90x160, 135x240, 180x320 for a 9:16 frame — with whole-pixel primitives in a limited palette, then scaled up nearest-neighbour to 1080x1920. Hard square pixels, ordered (Bayer) dithering instead of gradients, a built-in 5x7 bitmap font, sprites from string arrays, and screen effects that belong to a device: an LCD grid for a handheld, scanlines and a curved-tube vignette for an arcade. **Resolution can tell time:** an early era is chunkier than a later one, so a chronology gets sharper as it goes.
 

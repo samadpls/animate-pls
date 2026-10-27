@@ -4,7 +4,7 @@
 
 It exists because a storyboard drawn as correct-but-plain labelled diagrams came back "pretty boring" — right beats, no life. Comparing it against strong reference frames made the gap obvious.
 
-**Before drawing any storyboard or style frame, open 2–4 reference frames in the target look (the user's references, or the style's `sample.png` and demo), then check every panel against this list and the style's checklist.**
+**Before drawing any storyboard or style frame, open 2–4 reference frames in the target look (the user's references, or the style's `sample.jpg` and demo), then check every panel against this list and the style's checklist.**
 
 ## The universal checklist (every key frame, every style)
 

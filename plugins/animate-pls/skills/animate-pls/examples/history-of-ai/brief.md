@@ -35,7 +35,7 @@ Built through the storyboard check-ins: the 15 storyboard panels (`TIMELINE.boar
 | scale | 41–44 | 6 cuts at 0.5s, zooms alternating about the spark; the spark grows; books fly in |
 | hush | 44–46 | the cursor blinks; silence; "h", "hi" at 45.5 / 45.75 |
 | hi | 46–51 | enter → the bubble storm, phones up, confetti (the loudest hit at 46.0) |
-| work | 51–56 | the prompt typed, Read / Edit / Bash pop, "12 passed" ✓ |
+| work | 51–56 | the prompt typed, Read / Edit / Bash pop, "12 passed" |
 | end | 56–60 | Turing's page; the spark writes "good question." |
 
 ## Sound

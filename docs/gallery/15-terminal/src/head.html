@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>evals: three systems</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 20 — TERMINAL. 1:1, 3.0s @ 120 BPM, 24fps, one shot. From the owner's post "Production evals are
+//  three systems, not one" (samadpls.com blog): "I split evals into three separate systems"; deterministic checks
+//  are "the only tier that hard-gates CI"; "if plain code can decide it, I don't pay a model to decide it."
+//  One pane: the caret critter types `run evals`; the code-checks tier prints, marked GATE, and its three checks
+//  tick; the LLM-judge and multimodal tiers print marked "review" with spinners still turning (they don't gate);
+//  CI passed stamps in; the critter hops down to the next prompt. Settled by 2.4s, a calm hold to 3.0.
+//  Build: node <skill>/tools/build.mjs docs/gallery/20-terminal
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, left: 60, right: 60 };
+const HAND = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace';   // the storyboard's title font (kit/board.js)
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneEvals()]];
+const SHOTS = [
+  ['evals', 0, 0.0, 3.0, 'run evals: the code tier gates and ticks, the judge and multimodal tiers go to review, CI passed'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: '1:1',
+  format: 'single-era',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  // type = the first key; enter; the tiers and checks print; pass = CI passed stamps in; hop = the critter moves down
+  cues: { type: 0.06, enter: 0.84, gate: 0.92, c1: 1.04, c2: 1.16, c3: 1.28, judge: 1.42, media: 1.54, pass: 1.72, hop: 1.96, land: 2.26 },
+  acts: [
+    { name: '1 Evals', role: 'build', t0: 0.0, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'evals: three systems', sound: 'key clicks, a tick per check, a soft chime on CI passed', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

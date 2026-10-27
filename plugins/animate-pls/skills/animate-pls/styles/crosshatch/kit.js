@@ -123,11 +123,12 @@ function inkCard(str, x, y, size, o = {}) {
   handText(str, -w / 2 + size * 0.45, size * 0.36, size, o.color ?? C.ink, { key: 'cardt' + str, frac: o.frac });
   ctx.restore();
 }
-const inkTag = (str) => { const f = () => inkCard(str, 70 + (handW(str, 80) + 72) / 2, 330, 80, { rot: -0.04, s: popS(E0 + 0.2) }); if (DEFER) DEFER.push(f); else f(); };
-const inkCaption = (str) => { const f = () => inkCard(str, CX, 1440, 50, { rot: 0.012, frac: ev(E0 + 0.45, 0.6) }); if (DEFER) DEFER.push(f); else f(); };
+// tag and caption sit inside the format's safe area (9:16: y 330 and 1440)
+const inkTag = (str) => { const f = () => inkCard(str, 70 + (handW(str, 80) + 72) / 2, SAFE.top + 90, 80, { rot: -0.04, s: popS(E0 + 0.2) }); if (DEFER) DEFER.push(f); else f(); };
+const inkCaption = (str) => { const f = () => inkCard(str, CX, H - SAFE.bottom - 60, 50, { rot: 0.012, frac: ev(E0 + 0.45, 0.6) }); if (DEFER) DEFER.push(f); else f(); };
 
 // =====================================================================
-//  STYLE — the renderer's hooks (see styles/cut-paper/kit.js for the contract)
+//  STYLE — the renderer's hooks (see styles/cutout/kit.js for the contract)
 // =====================================================================
 const STYLE = {
   name: 'crosshatch',

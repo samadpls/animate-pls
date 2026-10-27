@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terminal demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  TERMINAL DEMO — 6.0s @ 120 BPM, 24fps, in 9:16 (main), 1:1 and 16:9. A pane turns on like a CRT; the caret
+//  critter types `make film`; scenes, score and frames print line by line (a block-character progress bar, a
+//  spinner, a count); a solid "film.mp4" block lands. That block of characters becomes the film.mp4 box of an ASCII
+//  pipeline (brief.md -> frames -> film.mp4); the critter hops down the arrows and lands on it as it turns sage.
+//  Proves the style kit renders, morphs, lays itself out per format and stays deterministic.
+//  Build: node <skill>/tools/build.mjs <skill>/styles/terminal/demo   (?format=1:1 or 16:9 for the others)
+// =====================================================================
+const FORMATS = { '9:16': [1080, 1920], '1:1': [1080, 1080], '16:9': [1920, 1080] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '9:16';
+const FPS = 24, [W, H] = FORMATS[FORMAT];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 6.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+// 9:16: the union of the TikTok / Reels / Shorts UI (tools/safezones.mjs); the kit also keeps text left of x 780
+// below y 840 (the action rail)
+const SAFE = { '9:16': { top: 288, bottom: 672, left: 120, right: 192 }, '1:1': { top: 60, bottom: 110, left: 60, right: 60 }, '16:9': { top: 60, bottom: 110, left: 60, right: 60 } }[FORMAT];
+const HAND = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace';   // the storyboard's title font (kit/board.js)
+const CX = (SAFE.left + W - SAFE.right) / 2;
+
+const M1 = 3.0;   // the morph: the film.mp4 block becomes the film.mp4 box
+const ERA_LIST = [[0, M1, () => sceneBuild()], [M1, DURATION, () => scenePipe()]];
+const SHOTS = [
+  ['build', 0, 0.0, M1, 'a pane turns on; the critter types make film; the output streams; a film.mp4 block lands'],
+  ['pipe',  1, M1, DURATION, 'the block becomes the film.mp4 box of a pipeline; the critter hops down to it as it passes'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [M1],
+  cues: { open: -0.14, type: 0.45, enter: 1.15, l1: 1.25, l2: 1.4, l3: 1.55, full: 2.1, done: 2.2,
+          hop1: 4.0, hop2: 4.375, land: 4.75 },
+  acts: [
+    { name: '1 Build', role: 'build', t0: 0.0, t1: M1 },
+    { name: '2 Ship',  role: 'gift',  t0: M1, t1: DURATION },   // quiet until the critter lands; the loudest hit as film.mp4 passes
+  ],
+  board: [
+    { t: 2.45, title: 'make film', sound: 'key clicks, a tap per line, ticks as the bar fills', next: 'the film.mp4 block becomes a box' },
+    { t: 5.4, title: 'brief in, film out', sound: 'quiet, then a stab and a chime as it lands', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

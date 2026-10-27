@@ -33,8 +33,9 @@ function nxHero(x, y, r, o = {}) {
 }
 
 // captions: drawn after the camera, at screen size (DEFER). Shots under ~1s should not call them (they appear late).
-const nxTag = (str) => { const f = () => nxText(str, 70, 330, 64, NX.ink, { frac: ev(E0 + 0.15, 0.3) }); if (DEFER) DEFER.push(f); else f(); };
-const nxCaption = (str) => { const f = () => nxText(str, CX, 1440, 52, NX.ink, { align: 'center', frac: ev(E0 + 0.4, 0.5) }); if (DEFER) DEFER.push(f); else f(); };
+// They sit inside the format's safe area (SAFE from the head; 9:16: y 330 and 1440), so every format places them.
+const nxTag = (str) => { const f = () => nxText(str, 70, SAFE.top + 90, 64, NX.ink, { frac: ev(E0 + 0.15, 0.3) }); if (DEFER) DEFER.push(f); else f(); };
+const nxCaption = (str) => { const f = () => nxText(str, CX, H - SAFE.bottom - 60, 52, NX.ink, { align: 'center', frac: ev(E0 + 0.4, 0.5) }); if (DEFER) DEFER.push(f); else f(); };
 
 // =====================================================================
 //  STYLE — the renderer's hooks (styles/README.md has the contract). Make every one look like the medium.

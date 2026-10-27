@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linocut demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  LINOCUT DEMO — 6.0s @ 120 BPM, 24fps, on 2s, in 9:16 (main), 1:1 and 16:9. By day a wave rises under a red sun
+//  and the swallow skims it; the sun becomes the moon over a cottage at night, a red window lights and the swallow
+//  comes home to the roof. Proves the kit prints, morphs (a red disc through a carved ring) and stays deterministic.
+//  Build: node <skill>/tools/build.mjs <skill>/styles/linocut/demo  (?format=1:1 or ?format=16:9 for the others)
+// =====================================================================
+// =====================================================================
+// =====================================================================
+const FORMATS = { '9:16': [1080, 1920], '1:1': [1080, 1080], '16:9': [1920, 1080] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '9:16';
+const FPS = 24, [W, H] = FORMATS[FORMAT];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, GRID0 = 0, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 6.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { '9:16': { top: 240, bottom: 420, right: 140 }, '1:1': { top: 60, bottom: 110, right: 60 }, '16:9': { top: 60, bottom: 110, right: 60 } }[FORMAT];
+const HAND = '"Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts (the storyboard uses it)
+const CX = (W - SAFE.right) / 2;
+const onBeat = (t) => +(GRID0 + Math.round((t - GRID0) / E8) * E8).toFixed(4);
+const M1 = onBeat(3.0);   // the morph: the red sun becomes the moon
+
+const ERA_LIST = [[0, M1, () => sceneSea()], [M1, DURATION, () => sceneNight()]];
+const SHOTS = [
+  ['sea', 0, 0.0, M1, 'a wave rises under a red sun; the swallow skims it'],
+  ['night', 1, M1, DURATION, 'the sun is the moon over a cottage; a red window lights; the swallow lands'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, gridOffset: GRID0, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [M1],
+  cues: { rise: 0.25, crest: 1.5, lamp: 4.0, land: 4.5 },
+  acts: [
+    { name: '1 Sea', role: 'build', t0: 0.0, t1: M1 },
+    { name: '2 Night', role: 'gift', t0: M1, t1: DURATION },
+  ],
+  board: [
+    { t: 1.5, title: 'the wave rises under the sun', sound: 'a swell and wind', next: 'the sun becomes the moon' },
+    { t: 5.0, title: 'home under the moon', sound: 'a night pad, a soft chime as the window lights', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

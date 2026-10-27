@@ -1,13 +1,24 @@
-# renders and intermediates are rebuilt by the tools
+# everything the tools build, wherever a piece lives (pieces are src/ + piece.json; the rest is rebuilt)
+**/index.html
 **/frames/
+**/frames-*/
 **/renders/
-**/review/*-vs-ref.*
+**/review/
+**/review-*/
+**/storyboard*.png
+**/thumb.png
+**/footage/
+**/footage.json
+**/voice.json
 node_modules/
 __pycache__/
-# built files (tools/build.mjs makes them from src/ + kit/ + the style)
-plugins/**/index.html
-plugins/**/review/
-# README gallery tiles: only the sources are kept (docs/gallery/build.mjs renders the rest)
-docs/gallery/*/index.html
-docs/gallery/*/review/
-docs/gallery/*/thumb.png
+# a piece's voice takes and recordings are the user's own: never committed
+**/voice/*.wav
+**/voice/*.mp3
+**/voice/*.m4a
+**/voice/audition/
+# montage clips of the gallery tiles (node docs/gallery/build.mjs --clips)
+docs/gallery/clips/
+# OS and editor files, and agent worktrees
+.DS_Store
+.claude/worktrees/

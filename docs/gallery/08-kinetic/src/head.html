@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build it, test it, leave it better.</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0b09; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 11 — KINETIC. 1:1, 3.0s @ 120 BPM, 24fps, one shot. The owner's own line from samadpls.com
+//  ("Build it, test it, leave it better.") set as kinetic type: BUILD IT, is already up on the first frame; TEST IT,
+//  lands and gets its tick; LEAVE IT lands; AS IS. lands, is struck out and flips to BETTER., and the pop box
+//  swipes in behind it while the asterisk hero hops. Settled by 2.2s, a calm hold to 3.0; the thumbnail is t = 2.5.
+//  Build: node <skill>/tools/build.mjs docs/gallery/11-kinetic
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Segoe UI", "Helvetica Neue", Arial, sans-serif';   // the storyboard's title font (kit/board.js)
+const CX = 540;
+const KIN_GROUND = 'ink';   // the kit's ground for this piece (read by styles/kinetic/kit.js)
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['motto', 0, 0.0, 3.0, 'BUILD IT, / TEST IT, / LEAVE IT stack in; AS IS. is struck out and flips to BETTER. on the pop box'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: '1:1',
+  format: 'single-era',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { build: -0.4, test: 0.25, tick: 0.5, leave: 0.625, asis: 1.0, strike: 1.17, flip: 1.42, box: 1.5, hop: 1.62, arrow: 1.75, marks: 1.75 },
+  acts: [
+    { name: '1 Motto', role: 'build', t0: 0.0, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'leave it better', sound: 'a soft pad, a small chord on BETTER', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

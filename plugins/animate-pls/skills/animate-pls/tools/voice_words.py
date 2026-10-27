@@ -15,8 +15,9 @@ def main():
         model = args[i + 1]
         del args[i:i + 2]
     from faster_whisper import WhisperModel
+    from voicelib import samples16k
     m = WhisperModel(model, device='cpu', compute_type='int8')
-    segs, _ = m.transcribe(args[0], word_timestamps=True, vad_filter=False, beam_size=5, language='en')
+    segs, _ = m.transcribe(samples16k(args[0]), word_timestamps=True, vad_filter=False, beam_size=5, language='en')
     out = []
     for s in segs:
         for w in s.words or []:

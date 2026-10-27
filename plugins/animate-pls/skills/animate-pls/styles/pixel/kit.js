@@ -387,7 +387,7 @@ function pixCaption(str, o = {}) {
     if (TT < E0 + (o.at ?? 0.45)) return;
     lowres(res, (w) => {
       const s = W / w, sc = o.scale ?? 1, tw = pixTextW(str, sc), bw = tw + 6 * sc, bh = 7 * sc + 6 * sc;
-      const x0 = Math.round((o.cx ?? CX) / s - bw / 2), y0 = Math.round((o.y ?? 1440) / s - bh / 2);
+      const x0 = Math.round((o.cx ?? CX) / s - bw / 2), y0 = Math.round((o.y ?? H - SAFE.bottom - 60) / s - bh / 2);   // 9:16: y 1440
       pixBox(x0, y0, bw, bh, { bg: o.bg ?? PAL16.ink, edge: o.edge ?? PAL16.white, shadow: o.shadow });
       const n = Math.floor(ev(E0 + (o.at ?? 0.45), o.dur ?? 0.6) * str.length + 1e-6);
       pixText(str, x0 + 3 * sc, y0 + 3 * sc, o.fg ?? PAL16.white, { scale: sc, count: n, cursor: o.cursor ?? true });
@@ -400,7 +400,7 @@ function pixTag(str, o = {}) {
     const t0 = E0 + (o.at ?? 0.2); if (TT < t0) return;
     lowres(res, (w) => {
       const s = W / w, sc = (o.scale ?? 1) * (TT < t0 + 0.08 ? 2 : 1), bw = pixTextW(str, sc) + 6 * sc, bh = 13 * sc;
-      const x0 = Math.round((o.x ?? 70) / s), y0 = Math.round((o.y ?? 290) / s);
+      const x0 = Math.round((o.x ?? 70) / s), y0 = Math.round((o.y ?? SAFE.top + 50) / s);   // 9:16: y 290
       pixBox(x0, y0, bw, bh, { bg: o.bg ?? PAL16.ink, edge: o.edge ?? PAL16.yellow, shadow: o.shadow });
       pixText(str, x0 + 3 * sc, y0 + 3 * sc, o.fg ?? PAL16.yellow, { scale: sc });
     });

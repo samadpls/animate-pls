@@ -23,16 +23,14 @@
 //   references/, references/stills/ and every references/<look>/ folder
 //
 // usage: node tools/review.mjs pieces/<name> [--format 1:1]
-import { createRequire } from 'node:module';
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { GPU_ARGS, gpuReport } from './gpu.mjs';
+import { chromium, openPiece } from './lib/pw.mjs';
 import { textCheck, printTextCheck } from './textcheck.mjs';
-
-const require = createRequire(import.meta.url);
-const { chromium } = (() => { try { return require('playwright'); } catch { return require(path.join(execSync('npm root -g').toString().trim(), 'playwright')); } })();
+import { safeZone, bands } from './safezones.mjs';
 
 const REPO = process.cwd();   // reference images resolve from where you run the tool
 if (!process.argv[2]) { console.error('usage: node tools/review.mjs pieces/<name>'); process.exit(2); }
@@ -40,6 +38,7 @@ const ROOT = path.resolve(process.argv[2]);
 const FORMAT = process.argv.includes('--format') ? process.argv[process.argv.indexOf('--format') + 1] : null;
 let REVIEW = path.join(ROOT, 'review');
 let VIDEO = path.join(ROOT, 'renders', 'final.mp4');
+let FRAMES = path.join(ROOT, 'frames');   // export.mjs's PNGs: the contact sheets are cut from these
 
 const PIECE = JSON.parse(fs.readFileSync(path.join(ROOT, 'piece.json'), 'utf8'));
 // a voice-over piece (piece.json "voice"): the story arc and the payoff window are judged on the score alone
@@ -57,28 +56,25 @@ const refPath = (n) => {
 };
 
 // ---- read TIMELINE + frame->shot mapping straight from index.html
-const PAGE_URL = pathToFileURL(path.join(ROOT, 'index.html')).href + '?export=1' + (FORMAT ? `&format=${encodeURIComponent(FORMAT)}` : '');
+const PAGE = path.join(ROOT, 'index.html');
 let browser = await chromium.launch();
-let page = await browser.newPage();
-await page.goto(PAGE_URL);
-await page.waitForFunction(() => window.TIMELINE && window.renderFrame);
+let page = await openPiece(await browser.newPage(), PAGE, { format: FORMAT });
 // WebGL pieces (TIMELINE.gpu) re-open on the real GPU: the anchor pass renders hundreds of frames
 if (await page.evaluate(() => !!window.TIMELINE.gpu)) {
   await browser.close();
   browser = await chromium.launch({ args: GPU_ARGS });
   page = await browser.newPage();
   await gpuReport(page);
-  await page.goto(PAGE_URL);
-  await page.waitForFunction(() => window.TIMELINE && window.renderFrame);
+  await openPiece(page, PAGE, { format: FORMAT });
 }
-const info = await page.evaluate(() => {
+const info = await page.evaluate(async () => {
   const T = window.TIMELINE;
   // protagonist screen position per frame; renderFrame first so camera state is current
   let anchor = null;
   if (T.anchor && typeof window.anchorAt === 'function') {
     anchor = [];
     for (let f = Math.round(T.anchor.t0 * T.fps); f < Math.round(T.anchor.t1 * T.fps); f++) {
-      window.renderFrame(f / T.fps);
+      await window.__frame(f / T.fps);
       const p = window.anchorAt(f / T.fps);
       anchor.push(p == null ? null : Array.isArray(p) ? p : [p.x, p.y]);
     }
@@ -90,15 +86,16 @@ const info = await page.evaluate(() => {
     cutFrames: T.cuts.map((c) => { let f = 0; while (f < T.frames && !past(f / T.fps, c)) f++; return f; }),
   };
 });
-const TXT = await textCheck(page, { safe: info.T.height > info.T.width ? info.T.safe || PIECE.review?.safe || { top: 240, bottom: 420, right: 140 } : null });
+// the safe zone (tools/safezones.mjs): piece.json review.safe > the review.platforms profile on 9:16 (default all) > TIMELINE.safe
+const ZONE = safeZone(info.T, PIECE, { format: FORMAT });
+const TXT = await textCheck(page, { safe: ZONE });
 await browser.close();
 const { T } = info;
 // another format than the main one: its own render and review folder
-if (FORMAT && FORMAT !== (PIECE.formats || [])[0]) { const suf = `-${T.width}x${T.height}`; VIDEO = path.join(ROOT, 'renders', `final${suf}.mp4`); REVIEW = path.join(ROOT, `review${suf}`); }
+if (FORMAT && FORMAT !== (PIECE.formats || [])[0]) { const suf = `-${T.width}x${T.height}`; VIDEO = path.join(ROOT, 'renders', `final${suf}.mp4`); REVIEW = path.join(ROOT, `review${suf}`); FRAMES = path.join(ROOT, `frames${suf}`); }
 fs.mkdirSync(REVIEW, { recursive: true });
 if (!fs.existsSync(VIDEO)) { console.error('no render at', VIDEO, '- run export.mjs first'); process.exit(1); }
 const FW = T.width || 1080, FH = T.height || 1080, VERTICAL = FH > FW;
-const SAFE = T.safe || PIECE.review?.safe || { top: 240, bottom: 420, right: 140 };
 
 // ---- decode final.mp4 to small grayscale frames for pixel-difference measurements
 const SW = 96, SH = Math.round((96 * FH) / FW / 2) * 2, PX = SW * SH;
@@ -118,9 +115,7 @@ if (!DRAWTEXT) console.log('note: this ffmpeg has no drawtext filter, so the con
 const label = (expr) => (DRAWTEXT ? expr : 'null');
 const cellW = VERTICAL ? 270 : 360, cellH = Math.round((cellW * FH) / FW / 2) * 2, cols = 4;
 const labelSize = Math.round(((VERTICAL ? 60 : 40) * FW) / 1080);
-const safeBoxes = VERTICAL
-  ? `drawbox=x=0:y=0:w=iw:h=${SAFE.top}:color=red@0.22:t=fill,drawbox=x=0:y=ih-${SAFE.bottom}:w=iw:h=${SAFE.bottom}:color=red@0.22:t=fill,drawbox=x=iw-${SAFE.right}:y=${SAFE.top}:w=${SAFE.right}:h=ih-${SAFE.top + SAFE.bottom}:color=red@0.22:t=fill,`
-  : '';
+const safeBoxes = VERTICAL ? bands(ZONE, FW, FH).map(([x, y, w, h]) => `drawbox=x=${x}:y=${y}:w=${w}:h=${h}:color=red@0.22:t=fill,`).join('') : '';
 for (const shot of T.shots) {
   const f0 = Math.round(shot.t0 * T.fps), f1 = Math.round(shot.t1 * T.fps) - 1;
   const picks = [];
@@ -129,7 +124,7 @@ for (const shot of T.shots) {
   const tag = `shot${String(shot.id).padStart(2, '0')}`;
   const sheet = path.join(REVIEW, `${tag}-sheet.jpg`);
   const sel = uniq.map((f) => `eq(n\\,${f})`).join('+');
-  let r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(T.fps), '-start_number', '0', '-i', path.join(ROOT, 'frames', 'f%04d.png'),
+  let r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(T.fps), '-start_number', '0', '-i', path.join(FRAMES, 'f%04d.png'),
     '-vf', `${safeBoxes}${label(`drawtext=${font}:text='%{pts\\:hms}  f%{n}':x=14:y=14:fontsize=${labelSize}:fontcolor=yellow:box=1:boxcolor=black@0.65:boxborderw=6`)},select='${sel}',scale=${cellW}:${cellH},tile=${cols}x${rows}`,
     '-frames:v', '1', '-q:v', '3', sheet], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('sheet failed for shot ' + shot.id);
@@ -151,7 +146,7 @@ for (const shot of T.shots) {
       '-frames:v', '1', '-q:v', '3', out], { stdio: 'inherit' });
     if (r.status !== 0) throw new Error('side-by-side failed for shot ' + shot.id);
   }
-  console.log(`shot ${shot.id} (${shot.title}): ${uniq.length} frames [${uniq.join(',')}] -> review/${tag}-sheet.jpg${refs.length ? ` + references/_review/${path.basename(ROOT)}/${tag}-vs-ref.jpg` : ''}`);
+  console.log(`shot ${shot.id} (${shot.title}): ${uniq.length} frames [${uniq.join(',')}] -> ${path.relative(ROOT, sheet)}${refs.length ? ` + references/_review/${path.basename(ROOT)}/${tag}-vs-ref.jpg` : ''}`);
 }
 
 // ---- cut timing
@@ -380,7 +375,14 @@ if (T.format === 'F9' || T.format === 'one-take') {
   console.log(`format F9: ${fc.every(([ok]) => ok) ? 'PASS' : 'FAIL'} (${fc.filter(([ok]) => ok).length}/${fc.length})`);
 }
 // ---- text: cut off, overlapping, under the phone UI (every string drawn, traced to screen)
-printTextCheck(TXT, PIECE.review?.textIgnore || []);
+// a reel's caption words FAIL under the phone UI; other text stays a WARN
+const CAPWORDS = new Set((T.captions || []).flatMap((c) => c.text.split(' ')));
+printTextCheck(TXT, PIECE.review?.textIgnore || [], T.format === 'reel' || T.reel ? { fail: (i) => CAPWORDS.has(i.s) } : {});
+// ---- reel (F10): hook, caption safe zone and timing, size, length, end hold, loudness, loop (tools/reel-check.mjs)
+if (T.format === 'reel' || T.reel) {
+  const r = spawnSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'reel-check.mjs'), ROOT, ...(FORMAT ? ['--format', FORMAT] : [])], { encoding: 'utf8' });
+  process.stdout.write(r.stdout || ''); if (r.stderr) process.stderr.write(r.stderr);
+}
 
 // ---- sound: the payoff numbers every piece reports (craft.md -> Sound), whatever the format
 const WAV = path.join(ROOT, 'renders', 'audio.wav');

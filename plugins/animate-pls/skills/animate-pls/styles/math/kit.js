@@ -346,10 +346,10 @@ function mathCard(segs, x, y, size, p, o = {}) {
   ctx.save(); ctx.globalAlpha = 0.75 * smoothM(p * 3); ctx.fillStyle = '#000'; ctx.fillRect(x - w / 2, y - h * 0.62, w, h); ctx.restore();
   writeText(segs, x, y + size * 0.05, size, p, { color: o.color || MC.white, lag: 1.0 });
 }
-const mathCaption = (segs) => { const f = () => mathCard(segs, CX, 1440, 50, runS(E0 + 0.45, 0.9)); if (DEFER) DEFER.push(f); else f(); };
+const mathCaption = (segs) => { const f = () => mathCard(segs, CX, H - SAFE.bottom - 60, 50, runS(E0 + 0.45, 0.9)); if (DEFER) DEFER.push(f); else f(); };   // 9:16: y 1440
 // a small grey section tag, top left, with an underline that draws on
 const mathTag = (str) => {
-  const f = () => { const p = runS(E0 + 0.15, 0.7), w = textW(str, 40, { it: true }); writeText(str, 70, 300, 40, p, { align: 'left', it: true, color: MC.grey }); segLine(70, 318, 70 + w, 318, MC.greyD, 2.5, smoothM(p * 1.3 - 0.3)); };
+  const f = () => { const p = runS(E0 + 0.15, 0.7), w = textW(str, 40, { it: true }), y = SAFE.top + 60; writeText(str, 70, y, 40, p, { align: 'left', it: true, color: MC.grey }); segLine(70, y + 18, 70 + w, y + 18, MC.greyD, 2.5, smoothM(p * 1.3 - 0.3)); };   // 9:16: y 300
   if (DEFER) DEFER.push(f); else f();
 };
 

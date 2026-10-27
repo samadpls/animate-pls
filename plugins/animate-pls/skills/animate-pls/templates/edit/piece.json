@@ -1,0 +1,11 @@
+{
+  "name": "edit",
+  "title": "Edit mode: a product video from a recording",
+  "format": { "width": 1920, "height": 1080, "fps": 24, "bpm": 120, "duration": 13.5, "frames": 324 },
+  "formats": ["16:9", "9:16"],
+  "storyFormat": "edit (a title note, the recording in an inked card with zooms on its real events, an end note)",
+  "style": "crosshatch",
+  "build": ["src/head.html", "kit/core.js", "style", "kit/footage.js", "src/scenes.js", "src/bridges.js", "kit/morph.js", "kit/board.js", "kit/score-head.js", "src/score.js", "kit/score-tail.js"],
+  "footage": { "app": { "record": "sample/steps.json" } },
+  "review": { "safe": { "top": 60, "bottom": 110, "right": 60 }, "refs": {} }
+}

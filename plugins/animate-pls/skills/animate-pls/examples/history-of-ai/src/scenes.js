@@ -1,6 +1,6 @@
 
 // =====================================================================
-//  STYLE FRAMES: four eras in the cut-paper direction
+//  STYLE FRAMES: four eras in the cutout direction
 // =====================================================================
 function wall(c, p) { cut(rect(-30, -30, W + 60, H + 60, 0), c, { key: 'wall' + c, shadow: false, tear: 0, pat: p, grain: 0.8, shade: false }); }
 // ---- 1950: Turing's study at midnight; the spark is born as the question mark
@@ -196,7 +196,7 @@ function sWork() {
 }
 
 // =====================================================================
-//  STORYBOARD v2: 15 beats, 60s, in the cut-paper look. The four style frames are reused.
+//  STORYBOARD v2: 15 beats, 60s, in the cutout look. The four style frames are reused.
 // =====================================================================
 const CHALK2 = '#ecefe4';
 function personBack(x, y, s, o = {}) {   // seen from behind: shoulders at y

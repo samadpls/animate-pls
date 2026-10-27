@@ -1,22 +1,18 @@
 #!/usr/bin/env node
 // Put a reference still and a rendered frame side by side at the same height, with a 10% proportion grid,
 // so a look is matched by proportions (element width as % of frame), line weight and palette — not pixels.
-//   usage: node tools/compare.mjs <reference.png|jpg> <piece dir | index.html> <seconds> <out.png> [--crop x,y,w,h] [--auto-trim] [--crop-ours x,y,w,h] [--no-grid]
+//   usage: node tools/compare.mjs <reference.png|jpg> <piece dir | index.html> <seconds> <out.png> [--crop x,y,w,h] [--auto-trim] [--crop-ours x,y,w,h] [--no-grid] [--format 1:1]
 //   --crop       the reference region to compare (in reference pixels), e.g. one figure out of a page screenshot
 //   --auto-trim  drop flat borders / letterboxing from the reference first (--crop then counts inside the trimmed picture)
 //   --crop-ours  the region of our frame to compare (in frame pixels), so both palettes describe the same kind of area
 // Prints both images' palettes (the 6 most common colours, quantised) so they can be compared as numbers.
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-const require = createRequire(import.meta.url);
-const { chromium } = (() => { try { return require('playwright'); } catch { return require(path.join(execSync('npm root -g').toString().trim(), 'playwright')); } })();
+import { chromium, openPiece } from './lib/pw.mjs';
 const args = process.argv.slice(2);
 const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : null; };
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? (args.splice(i, 1), true) : false; };
-const crop = opt('--crop'), cropOurs = opt('--crop-ours'), autoTrim = flag('--auto-trim'), noGrid = flag('--no-grid');
+const crop = opt('--crop'), cropOurs = opt('--crop-ours'), autoTrim = flag('--auto-trim'), noGrid = flag('--no-grid'), format = opt('--format');
 const [ref, src, sec, out] = args;
 if (!ref || !src || sec == null || !out) { console.error('usage: node tools/compare.mjs <reference image> <piece dir | index.html> <seconds> <out.png> [--crop x,y,w,h] [--no-grid]'); process.exit(2); }
 const file = src.endsWith('.html') ? src : path.join(src, 'index.html');
@@ -24,12 +20,11 @@ const mime = /\.jpe?g$/i.test(ref) ? 'image/jpeg' : 'image/png';
 const refURL = `data:${mime};base64,` + fs.readFileSync(ref).toString('base64');   // tool-side only; never in a piece
 const browser = await chromium.launch(), page = await browser.newPage();
 page.on('pageerror', (e) => { console.error('PAGE ERROR:', e.message); process.exitCode = 1; });
-await page.goto(pathToFileURL(path.resolve(file)).href + '?export=1');
-await page.waitForFunction(() => window.TIMELINE && window.renderFrame);
+await openPiece(page, file, { format });
 await page.evaluate(() => document.fonts.ready);
 const res = await page.evaluate(async ([refURL, t, crop, grid, trim, cropOurs]) => {
   const T = window.TIMELINE, fr = document.createElement('canvas'); fr.width = T.width; fr.height = T.height;
-  window.renderFrame(Math.round(t * T.fps) / T.fps, fr);
+  await window.__frame(Math.round(t * T.fps) / T.fps, fr);
   const img = new Image(); img.src = refURL; await img.decode();
   let tx = 0, ty = 0, tw = img.width, th = img.height;
   if (trim) {   // flat borders: every pixel of a border line within 14 levels of the corner colour

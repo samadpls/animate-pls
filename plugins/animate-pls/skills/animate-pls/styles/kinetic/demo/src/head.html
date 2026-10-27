@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0b09; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  KINETIC DEMO — 6.0s @ 120 BPM, 24fps, in 9:16 (main), 1:1 and 16:9. Night: TYPE / THAT / MOVES stacks in on
+//  the warm black, MOVES flips to POPS and the pop box swipes in behind it; the box becomes the box behind a
+//  count-up to 120 on paper by day: 120 / BEATS A MINUTE / 24 FRAMES / A SECOND. Proves the kit renders, morphs,
+//  re-lays itself out per format and stays deterministic.
+//  Build: node <skill>/tools/build.mjs <skill>/styles/kinetic/demo   (?format=1:1 or 16:9 for the others)
+// =====================================================================
+const FORMATS = { '9:16': [1080, 1920], '1:1': [1080, 1080], '16:9': [1920, 1080] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '9:16';
+const FPS = 24, [W, H] = FORMATS[FORMAT];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 6.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { '9:16': { top: 240, bottom: 420, right: 140 }, '1:1': { top: 60, bottom: 110, right: 60 }, '16:9': { top: 60, bottom: 110, right: 60 } }[FORMAT];
+const HAND = '"Segoe UI", "Helvetica Neue", Arial, sans-serif';   // the storyboard's title font (kit/board.js)
+const CX = (W - SAFE.right) / 2;
+
+const M1 = 3.0;   // the morph: the box behind POPS becomes the box behind the count-up
+const ERA_LIST = [[0, M1, () => sceneNight()], [M1, DURATION, () => sceneDay()]];
+const SHOTS = [
+  ['night', 0, 0.0, M1, 'TYPE / THAT / MOVES stacks in; MOVES flips to POPS; the pop box swipes in; the hero stamps it'],
+  ['day',   1, M1, DURATION, 'the box counts up to 120; BEATS A MINUTE / 24 FRAMES / A SECOND build below it'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [M1],
+  cues: { type: 0.0, that: 0.5, moves: 1.0, pops: 1.5, box: 1.625, land: 1.875, cap1: 0.5,
+          count: 3.2, hit: 4.0, beats: 4.25, frames: 4.75, second: 5.25, cap2: 5.0, hop: 5.5 },
+  acts: [
+    { name: '1 Night', role: 'build', t0: 0.0, t1: M1 },
+    { name: '2 Day',   role: 'gift',  t0: M1, t1: DURATION },   // silent while the box counts up; the loudest hit as it lands on 120
+  ],
+  board: [
+    { t: 2.2, title: 'TYPE THAT POPS', sound: 'a kick per word, a snap on the flip', next: 'the box becomes the count-up box' },
+    { t: 5.9, title: '120 beats a minute', sound: 'silence on the count, the loudest hit on 120, a chord', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

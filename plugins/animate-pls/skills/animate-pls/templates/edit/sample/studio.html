@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>animate-pls studio</title>
+<!-- animate-pls at work, as a page to record (tools/record.mjs with sample/steps.json): a brief is typed, the story
+     check's beat table comes back, the beats are approved, the piece renders, and the finished video plays.
+     The preview is drawn live by this skill's own kit (kit/core.js + the crosshatch kit), so it is real animate-pls
+     output. Local files only, system fonts, no network. Everything runs on the page clock, so a recording on
+     Playwright's fake clock is the same every time. -->
+<style>
+  :root { --bg: #1b1714; --bar: #15110f; --panel: #211b17; --line: #3a302a; --cream: #f4ecd9; --cream2: #d9ccb4; --mute: #95877a; --terra: #d97757; --terraD: #b4593d; --ok: #9cc285; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--cream); overflow: hidden; }
+  body { font: 16px/1.5 "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; -webkit-font-smoothing: antialiased; }
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; }
+  .win { position: absolute; inset: 0; display: grid; grid-template-rows: 46px 1fr; }
+  .bar { display: flex; align-items: center; gap: 9px; padding: 0 20px; background: var(--bar); border-bottom: 1px solid var(--line); }
+  .bar i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #5e5248; }
+  .bar i:first-child { background: var(--terra); border-color: var(--terra); }
+  .bar .t { flex: 1; text-align: center; color: var(--mute); font-size: 13px; margin-right: 60px; }
+  .main { display: grid; grid-template-columns: 1fr 492px; min-height: 0; }
+  .term { padding: 26px 32px; border-right: 1px solid var(--line); min-width: 0; }
+  .brand { font-size: 36px; font-style: italic; letter-spacing: -0.01em; }
+  .brand b { color: var(--terra); font-style: normal; font-weight: 400; }
+  .hello { color: var(--mute); font-size: 19px; font-style: italic; margin: 2px 0 22px; }
+  .prompt { position: relative; display: flex; gap: 12px; align-items: baseline; padding: 13px 16px; border: 1.5px solid var(--line); border-radius: 11px; background: #251e1a; transition: border-color 0.25s; }
+  .prompt.focus { border-color: var(--terra); }
+  .prompt.sent { border-color: var(--line); background: transparent; }
+  .prompt .gt { color: var(--terra); font-weight: 700; }
+  .prompt .echo { white-space: pre-wrap; word-break: break-word; min-height: 1.5em; }
+  .prompt .echo:empty::before { content: "describe the video you want"; color: #6d6157; }
+  .caret { display: inline-block; width: 9px; height: 18px; background: var(--cream); vertical-align: -3px; margin-left: 1px; }
+  .caret.off, .prompt.sent .caret { visibility: hidden; }
+  .prompt input { position: absolute; inset: 0; width: 100%; opacity: 0; border: 0; font: inherit; }
+  .think { color: var(--mute); margin: 16px 2px 0; display: none; }
+  .think.on { display: block; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid #5e5248; border-top-color: var(--terra); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -1px; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .story { margin-top: 18px; display: none; }
+  .story.on { display: block; }
+  .story h2 { margin: 0; font-size: 25px; font-weight: 400; display: flex; align-items: center; gap: 10px; }
+  .story h2::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--terra); }
+  .meta { color: var(--mute); font-size: 14px; margin: 3px 0 10px 20px; }
+  .row { display: grid; grid-template-columns: 62px 1fr; gap: 10px; padding: 7px 0 7px 20px; border-top: 1px dashed var(--line); font-size: 15.5px; opacity: 0; transform: translateX(-8px); transition: opacity 0.3s, transform 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
+  .row.on { opacity: 1; transform: none; }
+  .row span:first-child { color: var(--terra); }
+  .acts { display: flex; gap: 12px; margin: 14px 0 0 20px; opacity: 0; transition: opacity 0.3s; }
+  .acts.on { opacity: 1; }
+  .btn { font: inherit; font-size: 15px; border-radius: 9px; padding: 9px 17px; cursor: pointer; border: 1.5px solid var(--line); background: transparent; color: var(--cream2); }
+  .btn.go { background: var(--terra); border-color: var(--terra); color: #1b1714; font-weight: 700; transition: background 0.15s, transform 0.1s; }
+  .btn.go:hover { background: #e38866; }
+  .btn.go:active { transform: scale(0.97); }
+  .btn.go.done { background: transparent; color: var(--ok); border-color: #4f6145; }
+  .log { margin: 18px 0 0 20px; font-size: 15px; display: none; }
+  .log.on { display: block; }
+  .log div { margin: 4px 0; opacity: 0; transition: opacity 0.2s; }
+  .log div.on { opacity: 1; }
+  .log .d { color: var(--mute); }
+  .log .ok { color: var(--ok); }
+  .prog { display: flex; align-items: center; gap: 12px; }
+  .track { display: block; flex: 1; max-width: 320px; height: 10px; border-radius: 5px; background: #33291f; overflow: hidden; }
+  .fill { display: block; height: 100%; width: 0; background: var(--terra); border-radius: 5px; }
+  .view { padding: 24px 28px; display: flex; flex-direction: column; }
+  .view h3 { margin: 0 0 14px; font-weight: 400; font-style: italic; font-size: 20px; color: var(--mute); display: flex; justify-content: space-between; align-items: baseline; }
+  .view h3 small { font-style: normal; font-family: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; font-size: 12.5px; }
+  .stage { position: relative; width: 436px; height: 436px; border: 1.5px dashed #4a3e35; border-radius: 12px; display: grid; place-items: center; color: #6d6157; overflow: hidden; }
+  .stage.live { border: 1.5px solid var(--line); }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.35s; }
+  .stage.live canvas { opacity: 1; }
+  .stage .empty { text-align: center; font-size: 13px; line-height: 1.8; }
+  .stage .empty b { display: block; font-size: 30px; font-weight: 400; color: #5e5248; }
+  .under { margin-top: 12px; font-size: 13px; color: var(--mute); display: flex; justify-content: space-between; opacity: 0; transition: opacity 0.3s; }
+  .under.on { opacity: 1; }
+  .under b { color: var(--cream); font-weight: 400; }
+  .scrub { margin-top: 8px; height: 3px; background: #33291f; border-radius: 2px; overflow: hidden; }
+  .scrub div { height: 100%; width: 0; background: var(--cream2); }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="bar"><i></i><i></i><i></i><div class="t">~/projects/launch · animate-pls</div></div>
+  <div class="main">
+    <section class="term">
+      <div class="brand serif">animate<b>-</b>pls</div>
+      <div class="hello serif">Animated explainers written in code. One brief in, repeatable video out.</div>
+      <div class="prompt" id="prompt"><span class="gt">&rsaquo;</span><span><span class="echo" id="echo"></span><span class="caret" id="caret"></span></span><input id="q" autocomplete="off" spellcheck="false"></div>
+      <div class="think" id="think"><span class="spin"></span>reading the brief, checking the story</div>
+      <div class="story" id="story">
+        <h2 class="serif">Story check</h2>
+        <div class="meta">F5 journey · 30 s · 1:1 · crosshatch · 120 BPM</div>
+        <div class="row"><span>0.0s</span><span>you type example.com; the dot sets off</span></div>
+        <div class="row"><span>6.0s</span><span>the resolver asks the root</span></div>
+        <div class="row"><span>12.0s</span><span>the root points the way to .com</span></div>
+        <div class="row"><span>19.0s</span><span>.com names the server that knows</span></div>
+        <div class="row"><span>25.5s</span><span>the address comes home; the page opens</span></div>
+        <div class="acts" id="acts"><button class="btn go" id="approve">approve &#9656;</button><button class="btn">change beats</button></div>
+      </div>
+      <div class="log" id="log">
+        <div><span class="d">$</span> node tools/build.mjs pieces/dns <span class="ok" id="b1"></span></div>
+        <div><span class="d">$</span> node tools/export.mjs pieces/dns --share</div>
+        <div class="prog"><span>frames</span><span class="track"><span class="fill" id="fill"></span></span><span id="cnt">0..719</span></div>
+        <div>audio.wav <span class="ok">&#10003;</span> &nbsp;<span class="d">-14 LUFS</span></div>
+        <div>renders/final.mp4 <span class="ok">&#10003;</span> &nbsp;<span class="d">30.0 s · 1:1</span></div>
+      </div>
+    </section>
+    <section class="view">
+      <h3 class="serif">preview <small>1080 &times; 1080 · 24 fps</small></h3>
+      <div class="stage" id="stage"><div class="empty"><b class="serif">&#9675;</b>nothing rendered yet</div><canvas id="pv" width="1080" height="1080"></canvas></div>
+      <div class="under" id="under"><span><b>renders/final.mp4</b></span><span>0:30</span></div>
+      <div class="scrub"><div id="scrub"></div></div>
+    </section>
+  </div>
+</div>
+<!-- the preview's drawing kit: this skill's own code (W, H, FPS, HAND and CX are what it needs from a piece head) -->
+<script>
+  const FPS = 24, W = 1080, H = 1080, CX = 540;
+  const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';
+</script>
+<script src="../../../kit/core.js"></script>
+<script src="../../../styles/crosshatch/kit.js"></script>
+<script>
+  // ---- the page: everything is timed from performance.now(), which the recorder's fake clock drives
+  const $ = (s) => document.querySelector(s);
+  const UI = { sent: null, approved: null, play: null };
+  const q = $('#q');
+  q.addEventListener('focus', () => $('#prompt').classList.add('focus'));
+  q.addEventListener('input', () => { $('#echo').textContent = q.value; });
+  setInterval(() => $('#caret').classList.toggle('off'), 530);
+  const later = (ms, f) => setTimeout(f, ms);
+  q.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || UI.sent) return;
+    UI.sent = performance.now(); q.blur(); q.disabled = true;
+    $('#prompt').classList.remove('focus'); $('#prompt').classList.add('sent');
+    $('#think').classList.add('on');
+    later(520, () => { $('#think').classList.remove('on'); $('#story').classList.add('on'); });
+    document.querySelectorAll('.row').forEach((r, i) => later(620 + i * 130, () => r.classList.add('on')));
+    later(620 + 5 * 130 + 120, () => $('#acts').classList.add('on'));
+  });
+  $('#approve').addEventListener('click', () => {
+    if (UI.approved) return;
+    UI.approved = performance.now();
+    const b = $('#approve'); b.classList.add('done'); b.innerHTML = 'approved &#10003;';
+    $('#log').classList.add('on');
+    const L = document.querySelectorAll('#log > div');
+    later(120, () => L[0].classList.add('on'));
+    later(420, () => { $('#b1').innerHTML = '&#10003;'; L[1].classList.add('on'); });
+    later(560, () => L[2].classList.add('on'));
+    later(2150, () => L[3].classList.add('on'));
+    later(2350, () => { L[4].classList.add('on'); UI.play = performance.now(); $('#stage').classList.add('live'); $('#under').classList.add('on'); });
+  });
+  // ---- the render's progress bar: 720 frames over 1.5 s
+  function progress(now) {
+    if (!UI.approved) return;
+    const u = clamp((now - UI.approved - 600) / 1500);
+    $('#fill').style.width = `${(u * 100).toFixed(1)}%`;
+    $('#cnt').textContent = u <= 0 ? '0..719' : u < 1 ? `${Math.floor(u * 719)} / 719` : '719 / 719';
+  }
+  // ---- the finished piece, drawn by the kit: how DNS works, a journey the dot makes, node to node
+  const pv = $('#pv');
+  const NODES = [[175, 520, 'you', C.sky], [415, 700, 'resolver', C.yellow], [660, 470, 'root', C.roseL], [880, 700, '.com', C.greenL]];
+  function drawPiece(t) {
+    ctx = pv.getContext('2d'); F = Math.floor(t * FPS); B = Math.floor(F / 2); TT = B * 2 / FPS;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    paperSheet('dns');
+    inkCard('how DNS works', 335, 175, 78, { rot: -0.03 });
+    const P = NODES.map(([x, y]) => [x, y]);
+    for (let i = 0; i < 3; i++) planInk([P[i], [(P[i][0] + P[i + 1][0]) / 2, (P[i][1] + P[i + 1][1]) / 2 - 40], P[i + 1]], { frac: clamp((TT - 0.2 - i * 0.55) / 0.5), key: 'pl' + i });
+    NODES.forEach(([x, y, label, col], i) => {
+      const s = EZ.back(clamp((TT - i * 0.12) / 0.3)); if (s <= 0) return;
+      ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+      paint(ellipsePts(10, 14, 76, 76, 0, 40), { fill: 'rgba(58,36,23,0.28)', line: false, key: 'nsh' + i, tex: [{ k: 'hatch', a: 0.8, gap: 4, al: 0.5 }] });
+      paint(ellipsePts(0, 0, 76, 76, 0, 40), { fill: col, key: 'n' + i, w: 3.4, tex: [{ k: 'hatch', a: 0.8, gap: 6, al: 0.3, dens: (px, py) => clamp((px + py) / 120 + 0.4) }, { k: 'pencil', c: '#fff6e0', al: 0.35, per: 80 }] });
+      ctx.restore();
+      if (s > 0.6) handText(label, x - handW(label, 46) / 2, y + 128, 46, C.ink, { key: 'nl' + i });
+    });
+    // the dot travels the chain, and lands wide-eyed on .com
+    const u = clamp((TT - 0.5) / 2.1), k = Math.min(2.999, u * 3), i = Math.floor(k), f = EZ.io(k - i);
+    const a = P[i], b = P[i + 1], hx = lerp(a[0], b[0], f), hy = lerp(a[1], b[1], f) - Math.sin(f * Math.PI) * 120 - 92;
+    dotHero(hx, hy, 50, { key: 'pvhero', mood: u >= 1 ? 'wow' : null });
+    if (TT > 2.5) inkCard('a name becomes an address', 540, 930, 54, { rot: 0.012, s: EZ.back(clamp((TT - 2.5) / 0.25)), frac: clamp((TT - 2.6) / 0.5) });
+    grain({ n: 2600 });
+  }
+  function tick() {
+    const now = performance.now();
+    progress(now);
+    if (UI.play != null) { const t = (now - UI.play) / 1000; drawPiece(t); $('#scrub').style.width = `${Math.min(100, t / 30 * 100).toFixed(2)}%`; }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "watercolor-demo",
+  "title": "Watercolor demo",
+  "format": { "width": 1080, "height": 1920, "fps": 24, "bpm": 120, "duration": 6.0, "frames": 144 },
+  "formats": ["9:16", "1:1", "16:9"],
+  "storyFormat": "morph chain (2 eras, 1 shape morph)",
+  "style": "watercolor",
+  "review": { "safe": { "top": 240, "bottom": 420, "right": 140 }, "refs": {} }
+}

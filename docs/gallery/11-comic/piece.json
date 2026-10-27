@@ -1,0 +1,13 @@
+{
+  "name": "16-comic",
+  "title": "Operations, not state",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 3.0, "frames": 72 },
+  "formats": ["1:1"],
+  "storyFormat": "single era (gallery tile)",
+  "style": "comic",
+  "thumb": 2.5,
+  "review": {
+    "safe": { "top": 60, "bottom": 60, "right": 60 }, "refs": {},
+    "textIgnore": [[0.45, 1.42, "the ops fly down as balloons across the gutter and over the tiles; the POP! burst covers the T as it leaves"]]
+  }
+}
