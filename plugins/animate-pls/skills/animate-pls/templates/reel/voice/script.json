@@ -1,0 +1,13 @@
+{
+  "lead": 0.25,
+  "tail": 1.4,
+  "lines": [
+    { "id": "hook", "text": "Three Redis failures look the same.", "after": 0.45 },
+    { "id": "pen", "text": "Penetration: keys that don't exist", "after": 0.3 },
+    { "id": "pen2", "text": "always miss the cache.", "after": 0.45 },
+    { "id": "stamp", "text": "Stampede: one hot key expires", "after": 0.35 },
+    { "id": "stamp2", "text": "everyone misses at once.", "after": 0.45 },
+    { "id": "aval", "text": "Avalanche: many keys expire together.", "after": 1.7 },
+    { "id": "fix", "text": "The fix: TTL jitter.", "after": 0 }
+  ]
+}

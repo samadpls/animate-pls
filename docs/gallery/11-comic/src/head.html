@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operations, not state</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 16 — comic, 1:1, 3.0s @ 120 BPM, 24fps, on 2s. "Collaborative editing works because changes become
+//  operations" (samadpls.com blog): a client sends "insert the character 'x' at position 47" instead of the whole
+//  document; "if I insert a character at position 10 and, concurrently, you delete a character at position 5, my
+//  insert's target position needs to shift". Two characters edit one line of letter tiles at once: the cyan one
+//  pulls the doubled T out of COMMITT (DELETE @5) while the red hero brings an X for FI (INSERT X @10). On the server
+//  the delete lands first, the insert's 10 is struck to 9, and the X snaps into place: COMMIT FIX!
+//  The first frame already has the page, both panels and both characters; the key moment reads by 2.0s; the last
+//  0.5s is a calm hold (focus lines boiling, blinks, a drifting puff, twinkles).
+//  Build: node <skill>/tools/build.mjs docs/gallery/16-comic
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Trebuchet MS", "DejaVu Sans", Verdana, sans-serif';   // the storyboard's title font
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneOps()]];
+const SHOTS = [
+  ['ops', 0, 0.0, 3.0, 'two characters edit one line at once; the server lands the delete first and shifts the insert from 10 to 9'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'single-era',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { shout: 0.25, lift: 0.25, del: 0.5, pop: 0.92, close: 1.0, ins: 1.0, strike: 1.42, nine: 1.58, drop: 1.75, snap: 2.0, calm: 2.5 },
+  acts: [
+    { name: '1 At once', role: 'build', t0: 0.0, t1: 1.42 },
+    { name: '2 Transformed', role: 'gift', t0: 1.42, t1: 3.0 },
+  ],
+  board: [
+    { t: 0.9, title: 'two edits at once', sound: 'two shouts on one beat, a pop as the T comes out', next: 'the insert is shifted' },
+    { t: 2.5, title: 'insert X @9: COMMIT FIX!', sound: 'a strike, a snap, a small chime', next: 'calm hold' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

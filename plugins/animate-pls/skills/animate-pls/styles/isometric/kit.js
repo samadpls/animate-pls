@@ -274,12 +274,13 @@ function isoTagNow(num, label) {
   if (a <= 0.001) return;
   ctx.save(); ctx.globalAlpha = a;
   ctx.font = `400 30px ${ISOMONO}`; ctx.fillStyle = PAL.textD; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(num, 70, 318); const w = ctx.measureText(num).width;
-  polyPath([[70 + w + 16, 308], [70 + w + 16 + 60 * a, 308]], false); hair(PAL.edge); ctx.stroke();
-  ctx.fillStyle = PAL.text; ctx.fillText(label, 70 + w + 92, 318);
+  const y = SAFE.top + 78;   // inside the format's safe area (9:16: y 318)
+  ctx.fillText(num, 70, y); const w = ctx.measureText(num).width;
+  polyPath([[70 + w + 16, y - 10], [70 + w + 16 + 60 * a, y - 10]], false); hair(PAL.edge); ctx.stroke();
+  ctx.fillStyle = PAL.text; ctx.fillText(label, 70 + w + 92, y);
   ctx.restore();
 }
-const isoCaption = (str, o = {}) => { const f = () => isoCaptionNow(str, o.y ?? 1460, o); if (DEFER) DEFER.push(f); else f(); };
+const isoCaption = (str, o = {}) => { const f = () => isoCaptionNow(str, o.y ?? H - SAFE.bottom - 40, o); if (DEFER) DEFER.push(f); else f(); };   // 9:16: y 1460
 const isoTag = (num, label) => { const f = () => isoTagNow(num, label); if (DEFER) DEFER.push(f); else f(); };
 
 // =====================================================================

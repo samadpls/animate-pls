@@ -7,12 +7,9 @@
 //   --hide      elements to hide first (cookie banners, chat bubbles)
 // Only for sites the user owns or has the right to show; ask before capturing anything else.
 // tools/build.mjs embeds everything in <piece>/assets/ into index.html; draw it with drawAsset(name, x, y, w, h).
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-const require = createRequire(import.meta.url);
-const { chromium } = (() => { try { return require('playwright'); } catch { return require(path.join(execSync('npm root -g').toString().trim(), 'playwright')); } })();
+import { chromium } from './lib/pw.mjs';
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : d; };
 const flag = (k) => { const i = args.indexOf(k); return i >= 0 ? (args.splice(i, 1), true) : false; };

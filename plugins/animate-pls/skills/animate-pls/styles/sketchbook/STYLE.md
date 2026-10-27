@@ -1,6 +1,6 @@
 # Sketchbook
 
-![sample](sample.png)
+![sample](sample.jpg)
 
 Graphite and one accent colour on a warm sketchbook page. Every line is drawn by hand and boils on 2s. Things get **pencilled in, inked over, then coloured with a quick scribble**, and hand lettering on the page does the narrating. The page is the world: its dot grid, spiral binding, smudges and coffee ring stay in view, and the camera moves across the page instead of cutting away from it.
 

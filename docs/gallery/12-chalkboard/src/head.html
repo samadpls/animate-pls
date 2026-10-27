@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora · a 5-stage RISC-V pipeline</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #14110e; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 17 — chalkboard, 1:1, 3.0s @ 120 BPM, 24fps. Aurora (samadpls, github: Aurora-5-Stage-Pipelined-RV32i):
+//  "a RISC-V based 5-stage pipelined CPU", IF -> ID -> EX -> MEM -> WB with pipeline registers between the stages,
+//  "Designed by Abdul Samad Siddiqui". A lecture frame: the five stages as chalk boxes across the board with the
+//  pipeline registers between them; under them, one row per instruction, each written into the stage it has reached.
+//  On every clock edge (one a beat) every instruction steps one stage on and a new one is fetched, until five are in
+//  flight at once: a yellow diagonal, which the teacher circles while the chalk hero points at it.
+//  Frame 0 already holds the board, the title, the stages and two instructions; the last 0.5s is a calm hold.
+//  Build: node <skill>/tools/build.mjs docs/gallery/17-chalkboard
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Chalkduster", "Ink Free", "Segoe Print", "Chalkboard SE", "Bradley Hand", "Comic Neue", cursive';   // the storyboard's title font
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneAurora()]];
+const SHOTS = [
+  ['pipeline', 0, 0.0, 3.0, 'instructions step through IF, ID, EX, MEM, WB one clock at a time until five are in flight'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'single-era',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { tick3: 0.5, tick4: 1.0, tick5: 1.5, point: 1.55, loop: 1.7, note: 2.05, settle: 2.5 },
+  acts: [
+    { name: '1 Clock', role: 'build', t0: 0.0, t1: 1.7 },
+    { name: '2 Five at once', role: 'gift', t0: 1.7, t1: 3.0 },
+  ],
+  board: [
+    { t: 2.5, title: 'five instructions in flight', sound: 'a chalk tap and a pluck on every clock edge, a soft chime as the loop closes', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

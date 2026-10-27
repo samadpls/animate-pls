@@ -1,0 +1,11 @@
+{
+  "name": "14-reel",
+  "title": "Reel: a Redis cache avalanche",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 3.0, "frames": 72 },
+  "formats": ["1:1"],
+  "storyFormat": "F10 reel tile (one beat of templates/reel: every key expires together, word captions, a calm hold)",
+  "style": "crosshatch",
+  "build": ["src/head.html", "kit/core.js", "style", "kit/captions.js", "src/scenes.js", "src/bridges.js", "kit/morph.js", "kit/board.js", "kit/score-head.js", "src/score.js", "kit/score-tail.js"],
+  "thumb": 2.33,
+  "review": { "safe": { "top": 60, "bottom": 60, "right": 60, "left": 60 }, "refs": {} }
+}

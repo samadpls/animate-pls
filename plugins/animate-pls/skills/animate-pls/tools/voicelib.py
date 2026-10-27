@@ -57,6 +57,17 @@ def duration(path):
     return float(out or 0)
 
 
+def samples16k(path):
+    """mono float32 samples at 16 kHz, decoded by ffmpeg, for faster-whisper. Its own decoder goes through PyAV,
+    and PyAV 19 dropped an argument faster-whisper 1.2 passes (av.open(metadata_errors=...)): a fresh install would
+    lose the word times. Handing it the samples keeps every PyAV version working."""
+    import numpy as np
+    r = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(path), '-ac', '1', '-ar', '16000', '-f', 'f32le', '-'], capture_output=True)
+    if r.returncode:
+        sys.exit(f'could not decode {path}: {r.stderr.decode(errors="replace").strip()}')
+    return np.frombuffer(r.stdout, dtype=np.float32)
+
+
 def silences(path, db=-40, min_s=0.12):
     """[(start, end), ...] of the quiet stretches in a recording (ffmpeg silencedetect)"""
     r = subprocess.run(['ffmpeg', '-v', 'info', '-i', str(path), '-af', f'silencedetect=n={db}dB:d={min_s}', '-f', 'null', '-'],

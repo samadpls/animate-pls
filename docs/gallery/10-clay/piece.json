@@ -1,0 +1,10 @@
+{
+  "name": "13-clay",
+  "title": "Four years of showing up",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 3.0, "frames": 72 },
+  "formats": ["1:1"],
+  "storyFormat": "single era (gallery tile)",
+  "style": "clay",
+  "thumb": 2.5,
+  "review": { "safe": { "top": 60, "bottom": 60, "right": 60 }, "refs": {} }
+}

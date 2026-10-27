@@ -6,13 +6,22 @@ Build the gallery of every style's sample: `node tools/gallery.mjs styles.png [<
 
 | style | the look | motion | proven on |
 |---|---|---|---|
-| [cut-paper](cut-paper/STYLE.md) | torn paper, drop shadows, crayon, patterns, characters with faces | on 2s | a 60s history (15 worlds, 13 morphs) |
+| [cutout](cutout/STYLE.md) | cut paper: torn paper, drop shadows, crayon, patterns, characters with faces | on 2s | a 60s history (15 worlds, 13 morphs) |
 | [crosshatch](crosshatch/STYLE.md) | sketchy ink that boils, hatch / pencil shading, warm paper and navy "inside the machine" | on 2s | several short explainers |
 | [riso](riso/STYLE.md) | a three-ink risograph print: halftone screens, overprints, misregistration | on 2s | a 6s frame-matched study |
 | [sketchbook](sketchbook/STYLE.md) | graphite and one accent colour on a sketchbook page, hand lettering | on 2s | a 15s explainer |
 | [math](math/STYLE.md) | a manim-style math explainer: black stage, axes and graphs, colour-coded variables, smooth easing | on 1s | two short math explainers |
 | [isometric](isometric/STYLE.md) | isometric product line art: constant hairlines, white faces, rounded slabs, one dark accent; light or dark ground | on 1s, spring settles | this demo (the first style made with new-style.md) |
 | [pixel](pixel/STYLE.md) | low-resolution eras: draw at the true resolution, upscale nearest-neighbour | on 1s or 2s | a fixed-stage history of AI video |
+| [kinetic](kinetic/STYLE.md) | kinetic typography for reels and launch posts: huge condensed caps on a flat ground (warm black, paper or signal yellow), one pop colour only for the keyword's box, die-cut stickers, an asterisk hero | on 1s, slams and snappy springs | this demo and a gallery tile |
+| [flat](flat/STYLE.md) | a flat-vector science explainer in warm mid-century colours: no outlines, flat fills on an ink-teal night, 45° long shadows, rim light, tight glows on lights only, round big-eyed creatures | on 1s, eases and springs | this demo and a gallery tile |
+| [clay](clay/STYLE.md) | plasticine stop motion: soft lit clay pieces with speckle, tool marks and fingerprints, cast and contact shadows, a boiling hero, rolled-clay lettering on a felt and clay-table set | on 2s | this demo and a gallery tile |
+| [comic](comic/STYLE.md) | a printed comic page: tapered brush-ink outlines, flat process inks with Ben-Day dots on newsprint, panels, balloons, sound effects, speed lines | on 2s | this demo and a gallery tile |
+| [chalkboard](chalkboard/STYLE.md) | a classroom slate: grainy chalk written stroke by stroke over the ghosts of old lessons, falling dust, white chalk with yellow, coral and teal | on 2s | this demo and a gallery tile |
+| [linocut](linocut/STYLE.md) | a hand-carved relief print: warm black and one vermilion block on cream paper, gouge cuts that follow the form, the red slightly off register | on 2s | this demo and a gallery tile |
+| [watercolor](watercolor/STYLE.md) | loose watercolour on cold-press paper: glazed washes with pooled edges, granulation, white paper for highlights, a sepia pen line | on 2s | this demo and a gallery tile |
+| [terminal](terminal/STYLE.md) | a warm developer terminal: cream and amber monospace on warm black, typed commands, block-character bars, ASCII boxes, a light CRT finish | on 1s | this demo and a gallery tile |
+| [poster](poster/STYLE.md) | a 1970s screenprint: flat spot inks off register, sunbursts and rainbow bands, heavy round type with echo outlines | on 2s | this demo and a gallery tile |
 | custom | any other look: show it a video, stills or a web page and it measures the style, matches frames with you and saves `styles/<name>/` ([new-style.md](../new-style.md)) | either | woodblock prints, neon signs (test runs) |
 
 A new look gets made from the user's references with [new-style.md](../new-style.md), then saved as a style beside the project's pieces (`<project>/styles/<name>/`), where `build.mjs` finds it.
@@ -23,7 +32,8 @@ A new look gets made from the user's references with [new-style.md](../new-style
 styles/<name>/
   STYLE.md     the look's rules: what it is, palette, line and texture, motion habits, its frame checklist, do/don't, proven on
   kit.js       the drawing code, built on kit/core.js, ending in `const STYLE = { ... }`
-  sample.png   one representative frame, 540x960 (half of 1080x1920)
+  sample.jpg   its thumbnail in the intake gallery, 540x540: the style's README tile (docs/gallery/build.mjs writes it);
+               a style made in a project can use sample.png instead, one frame of its demo at 540x960
   demo/        a 4–8s piece in the style (piece.json + src/) that builds, tiles deterministic and morphs once
 ```
 
@@ -50,7 +60,7 @@ Rules every kit keeps:
 - **Deterministic:** randomness from `RNG(...)` keys only; anything that changes per boil step keys on `B`; never `Math.random()` or the clock. `tools/tile.mjs` checks it.
 - **Nothing carries between frames.** The renderer clears each era's layer; a kit never keeps drawing state across `renderFrame` calls (caches of *static* things, keyed and seeded, are fine).
 - **Everything is code.** No images, fonts files, `data:` URIs or URLs. Fonts are local system fonts with fallbacks for Windows, macOS and Linux.
-- **Captions and tags go through `DEFER`** (see `yearTag` in cut-paper) so they draw after the camera, at screen size.
+- **Captions and tags go through `DEFER`** (see `yearTag` in cutout) so they draw after the camera, at screen size. Place them from the head's `SAFE` (`SAFE.top + 90`, `H - SAFE.bottom - 60`: y 330 and 1440 on 9:16), never at fixed 9:16 numbers, so 1:1, 4:5 and 16:9 place them too.
 - **Kits don't mix.** One style per piece: kits reuse names (`handText`, `STYLE`), so a piece that needs two looks gets a merged kit.
 
 Renderer quirks a kit has to know:
@@ -61,7 +71,7 @@ Renderer quirks a kit has to know:
 
 ### Names a kit must not reuse
 
-`kit/core.js`, `kit/morph.js` and the piece head already define these at the top level; redeclaring one either fails the build or silently replaces it: `W`, `H`, `FPS`, `ctx`, `F`, `B`, `TT`, `E0`, `DEFER`, `SPARK_AT`, `C`, `MONO`, `RAINBOW`, `TAU`, `DEG`, `RNG`, `hash`, `clamp`, `lerp`, `seg`, `past`, `dist`, `EZ`, `ev`, `popS`, `smooth` (a smoothstep), `mod`, `ellipsePts`, `rrectPts`, `arcPts`, `xform`, `bbox`, `resample`, `pathLen`, `subPath`, `pointAt`, `wobble`, `trace`, `ink`, `paint`, `texture`, `hatch`, `pencil`, `stipple`, `grain`, `construct`, `cline`, `ruler`, `sparkBurst`, `burst`, `star4`, `rainbow`, `hexGrid`, `irisRim`, `irisHole`, `camera`, `screen`, `toScreen`, `fillAll`, `monoText`, `monoW`, `handwrite`, `drawPencil`, `asterisk`, `camOf`, `push`, `bump`, `SP`, `starPts`, `byAngle`, `mixHex`, `maskK`, `layer`, `renderEra`, `renderFrame`, `HAND`, `CX`, `TIMELINE`, `SPRING`, `springEase`, `springMove`, `springTrack`, `LX`, `LY`, `UNIT`, `PORTRAIT`, `WIDE`, `asset`, `drawAsset`, `ASSETS`, `BEATS`, `FORMAT`, `FORMATS`, `GRID0`, `onBeat`. Prefix a kit's own helpers (`iso…`, `pix…`, `riso…`) when in doubt.
+`kit/core.js`, `kit/morph.js` and the piece head already define these at the top level; redeclaring one either fails the build or silently replaces it: `W`, `H`, `FPS`, `ctx`, `F`, `B`, `TT`, `E0`, `DEFER`, `SPARK_AT`, `C`, `MONO`, `RAINBOW`, `TAU`, `DEG`, `RNG`, `hash`, `clamp`, `lerp`, `seg`, `past`, `dist`, `EZ`, `ev`, `popS`, `smooth` (a smoothstep), `mod`, `ellipsePts`, `rrectPts`, `arcPts`, `xform`, `bbox`, `resample`, `pathLen`, `subPath`, `pointAt`, `wobble`, `trace`, `ink`, `paint`, `texture`, `hatch`, `pencil`, `stipple`, `grain`, `construct`, `cline`, `ruler`, `sparkBurst`, `burst`, `star4`, `rainbow`, `hexGrid`, `irisRim`, `irisHole`, `camera`, `screen`, `toScreen`, `fillAll`, `monoText`, `monoW`, `handwrite`, `drawPencil`, `asterisk`, `camOf`, `push`, `bump`, `SP`, `starPts`, `byAngle`, `mixHex`, `maskK`, `layer`, `renderEra`, `renderFrame`, `HAND`, `CX`, `TIMELINE`, `SPRING`, `springEase`, `springMove`, `springTrack`, `LX`, `LY`, `UNIT`, `PORTRAIT`, `WIDE`, `asset`, `drawAsset`, `ASSETS`, `BEATS`, `FORMAT`, `FORMATS`, `GRID0`, `onBeat`. Prefix a kit's own helpers (`iso…`, `pix…`, `riso…`) when in doubt. `tools/build.mjs` checks it: a style kit or src file that redeclares a top-level name of `kit/core.js`, `morph.js`, `board.js`, `score-head.js` or `score-tail.js` fails the build, naming the line.
 
 ## Making a style from an existing piece (porting)
 
@@ -69,5 +79,5 @@ Renderer quirks a kit has to know:
 2. Write `STYLE` hooks in the medium.
 3. Build `demo/` (copy `crosshatch/demo/`): two eras, one shape morph, a hero, a caption, 3+ details of background life.
 4. `node tools/build.mjs styles/<name>/demo`, then `node tools/tile.mjs styles/<name>/demo tile.png <frames>` → `deterministic: true`, and look at the tile.
-5. `node tools/still.mjs styles/<name>/demo <t> styles/<name>/sample.png --scale 0.5`.
+5. `node tools/still.mjs styles/<name>/demo <t> styles/<name>/sample.png --scale 0.5` (a style shipped in this skill gets a README gallery tile instead, and `docs/gallery/build.mjs` writes its `sample.jpg`).
 6. Write `STYLE.md` with its frame checklist.

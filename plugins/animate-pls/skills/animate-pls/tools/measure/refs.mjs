@@ -7,12 +7,9 @@
 //     pixels, so the plain palette shows only the ground), with each family's core (brightest) and halo colour
 //   usage: node tools/measure/refs.mjs <image | folder> [more...] [--top 10] [--points 120,40;300,500]
 // Everything written here contains reference pixels: keep it in the gitignored references/<look>/ folder.
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-const require = createRequire(import.meta.url);
-const { chromium } = (() => { try { return require('playwright'); } catch { return require(path.join(execSync('npm root -g').toString().trim(), 'playwright')); } })();
+import { chromium } from '../lib/pw.mjs';
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : d; };
 const accent = args.includes('--accent') ? (args.splice(args.indexOf('--accent'), 1), true) : false;

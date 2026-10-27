@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karachi · across time zones</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  GALLERY TILE 19 — watercolor, 1:1, 3.0s @ 120 BPM, 24fps, on 2s. "Karachi · across time zones" (samadpls.com:
+//  "Karachi, Pakistan · working across time zones"). A Karachi seafront at dusk: a low skyline lighting up, the sea,
+//  a camel on the sand, kites. Across the sky hangs a string of three clocks: each face blooms in with its own sky
+//  (midday, dusk, night) as its hands swing from Karachi's 6:30 to their own hour, and the sparrow hops along the
+//  string to the Karachi clock. The first frame already has the whole seafront; the last 0.4s is a calm hold.
+//  Build: node <skill>/tools/build.mjs docs/gallery/19-watercolor
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080;
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60 };
+const HAND = '"Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif';   // the storyboard's title font
+const CX = 540;
+
+const ERA_LIST = [[0, 3, () => sceneTile()]];
+const SHOTS = [
+  ['tile', 0, 0.0, 3.0, 'a Karachi seafront at dusk; three clocks bloom with their own hours; the sparrow hops to the Karachi clock'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE,
+  format: 'single-era',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [],
+  cues: { title: 0.15, faces: [0.25, 0.6, 0.95], swing: [0.45, 1.1], hop: [1.0, 1.4, 1.8], lights: [0.3, 0.6, 0.9, 1.2, 1.5, 1.8] },
+  acts: [
+    { name: '1 Three hours', role: 'build', t0: 0.0, t1: 2.15 },
+    { name: '2 Home', role: 'gift', t0: 2.15, t1: 3.0 },
+  ],
+  board: [
+    { t: 1.0, title: 'the clocks bloom in, hands swinging', sound: 'three soft chimes', next: 'the sparrow lands' },
+    { t: 2.5, title: 'Karachi, across time zones', sound: 'a warm chord, the sea', next: 'calm hold' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

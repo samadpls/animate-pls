@@ -392,8 +392,9 @@ function printCard(str, x, y, size, o = {}) {
   endSheet();
 }
 const defer = (f) => { if (DEFER) DEFER.push(f); else f(); };
-const risoTag = (str) => defer(() => printTag(str, 70 + (typeW(str, 72) + 65) / 2, 330, 72, { s: popS(E0 + 0.2) }));
-const risoCaption = (str) => defer(() => printCard(str, CX, 1440, 50, { s: popS(E0 + 0.3), frac: ev(E0 + 0.45, 0.6) }));
+// tag and caption sit inside the format's safe area (9:16: y 330 and 1440)
+const risoTag = (str) => defer(() => printTag(str, 70 + (typeW(str, 72) + 65) / 2, SAFE.top + 90, 72, { s: popS(E0 + 0.2) }));
+const risoCaption = (str) => defer(() => printCard(str, CX, H - SAFE.bottom - 60, 50, { s: popS(E0 + 0.3), frac: ev(E0 + 0.45, 0.6) }));
 
 // =====================================================================
 //  STYLE — the renderer's hooks (kit/morph.js). Each one prints a small sheet over what ctx shows.

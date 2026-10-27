@@ -1,6 +1,6 @@
 # Math
 
-![sample](sample.png)
+![sample](sample.jpg)
 
 A manim-style math explainer look. Coloured math on a near-black stage:
 - serif type that is **Written** on

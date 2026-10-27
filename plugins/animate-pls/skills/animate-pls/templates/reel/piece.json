@@ -1,0 +1,10 @@
+{
+  "name": "reel",
+  "title": "Reel: three cache failures",
+  "format": { "width": 1080, "height": 1920, "fps": 24, "bpm": 120, "duration": 15.0, "frames": 360 },
+  "formats": ["9:16", "1:1", "4:5"],
+  "storyFormat": "F10 reel (a hook by 1.0s, beat-cut on 8ths, word captions, a silence and one payoff hit, a 1.15s end hold)",
+  "style": "crosshatch",
+  "build": ["src/head.html", "kit/core.js", "style", "kit/captions.js", "src/scenes.js", "src/bridges.js", "kit/morph.js", "kit/board.js", "kit/score-head.js", "src/score.js", "kit/score-tail.js"],
+  "review": { "platforms": "all", "refs": {} }
+}

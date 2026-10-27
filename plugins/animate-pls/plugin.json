@@ -1,0 +1,47 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "animate-pls",
+  "version": "0.2.0",
+  "description": "Animated videos made in code, on your own machine: explainers, product films, reels and edits of your own screen recordings, in 20 one-word designs (cutout, clay, comic, chalkboard, linocut, watercolor, terminal, poster and more), with word-by-word captions and an optional free local voice-over cloned from your own recording. MP4 in 9:16, 1:1, 4:5 and 16:9.",
+  "author": {
+    "name": "samadpls",
+    "url": "https://github.com/samadpls"
+  },
+  "homepage": "https://github.com/samadpls/animate-pls",
+  "repository": "https://github.com/samadpls/animate-pls",
+  "license": "MIT",
+  "keywords": [
+    "animation",
+    "video",
+    "explainer",
+    "reels",
+    "product-video",
+    "screen-recording",
+    "captions",
+    "voice-over",
+    "canvas",
+    "motion-graphics"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "animate-pls",
+        "shortDescription": "Animated videos made in code, narrated in your own voice",
+        "longDescription": "Describe a video and your agent writes it as one deterministic canvas page, then renders it to MP4 with a local browser and ffmpeg. Explainers, histories, product films, reels with word-by-word captions, and polished edits of your own screen recordings. Eleven styles or a new one from your references. The voice-over runs locally (VoxCPM2, cloned from your own recording); no AI video model and no subscription.",
+        "developerName": "samadpls",
+        "category": "Creativity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://samadpls.com",
+        "defaultPrompt": [
+          "Use $animate-pls to make a 30-second explainer of how this repo works, crosshatch, 1:1",
+          "Use $animate-pls to turn my screen recording into a 9:16 product reel with captions",
+          "Use $animate-pls to make a 20-second kinetic-type reel of our launch announcement"
+        ],
+        "brandColor": "#D97757"
+      }
+    }
+  }
+}

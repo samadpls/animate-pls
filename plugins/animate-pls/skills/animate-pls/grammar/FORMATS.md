@@ -57,7 +57,7 @@ Every piece is one choice from each column. Read a format as a proven combinatio
 - **Device:** the last era reveals a survivor or successor, then returns to the first image.
 - **Fits:** any history; a session's context window filling over time.
 - **Checks (`format: 'F2'`, fixed stage):** 0 hard cuts; the stage still ≥85% of frames; ≥4 morph bridges on the grid; the counter present ≥80%; ≤−40 dB for ≥0.4s before the loudest hit. Morph-chain pieces across many worlds use `format: 'morph-chain'` (cuts + morph grid + story arc).
-- **Status: proven** — a fixed-stage history of AI video, and a 60s cut-paper history of AI across 15 worlds (13 morphs, one hard cut on the payoff; `examples/history-of-ai`).
+- **Status: proven** — a fixed-stage history of AI video, and a 60s cutout history of AI across 15 worlds (13 morphs, one hard cut on the payoff; `examples/history-of-ai`).
 
 ### F3. Call → catalogue
 - **Engine:** a call goes out; the answer is a catalogue, one item per beat, gathered into one image; the answer goes back.
@@ -124,6 +124,23 @@ Every piece is one choice from each column. Read a format as a proven combinatio
 - **Checks (`format: 'F9'`):** 0 hard cuts (listed or measured); every shot boundary is in `TIMELINE.carries` (the carries' `tc`s); ≥ 2 carries; nothing parked for more than 2.5s.
 - **Inspired by** [onetake](https://github.com/feitangyuan/onetake) by feitangyuan, which argues for motion where each beat grows out of the one before. animate-pls implements the idea with its own kit; no code or text from onetake is used.
 - **Status:** new: the template `templates/one-take/` passes its checks; no full piece yet.
+
+### F10. Reel (hook, word captions, loop)
+
+*A delivery format: a reel is any short story above (F4 and F9 fit best, or a catalogue cut on the beat) made to survive a vertical feed: swiped past in a second, watched with the sound off, read under the app's buttons. Its card sits here, after the study notes, because it is new.*
+
+- **Engine:** any of the above, cut down to one claim. Open on the end of the story (the flash-forward open): the result, the failure, the number, then earn it.
+- **Stage:** beat-cut held shots on one stage the eye can hold, each shot complete on its first frame; one extreme close-up for the turn. Lay it out with `LX` / `LY` / `UNIT` (or one fitted stage) so 9:16, 1:1 and 4:5 come from the same drawing, never a crop.
+- **Clock:** 120 BPM at 24fps (LinkedIn wants under 30fps), a new beat every 1.5–3s on the 8th grid; with a voice the lines are the clock and each cut sits on the 8th nearest the pause between two lines. Length 15–35s (LinkedIn: 15–30s, and it loops anything under 30s until 30s have played).
+- **Hook rule:** frame 0 is already a strong picture, never a blank, a fade-in or a logo; the biggest claim or number is on screen within 0.5s, the first text by 1.0s (a caption at exactly 0s looks pre-existing: start it 0.1–0.3s in), and a sound on frame 0.
+- **Captions:** word by word, from the voice's word times (`VOICE`) or a `CAPTION_SCRIPT`, with `kit/captions.js`: at most 3 words a chunk (up to 5 for calm pieces), a new chunk at punctuation, at a pause of 150ms or more, or past 1.2s; runs split into even chunks, never one short word alone; one chunk on screen at a time, the word being said in the one accent colour, a 0.8 → 1 pop on each chunk; at least 64px at 1080 wide (50 is the floor). In the style's own lettering (crosshatch: the hand on a thick ink edge with a marker swipe; a style can letter them itself with `STYLE.caption`), never a generic UI sans.
+- **Safe zones (9:16, at 1080x1920):** TikTok top 240, bottom 660, sides 120 and a button rail at x ≥ 780 below y 840; Instagram Reels top 269, bottom 672, sides 65; YouTube Shorts top 288, bottom 672, left 48, right 192. Their union leaves x 120–888, y 288–1248 (768x960, exactly 4:5) and, below y 840, only x < 780: every word goes there (`tools/safezones.mjs`, `review.platforms`); below y 1248 only decoration. 4:5 and 1:1 keep the piece's own margins.
+- **Turn and payoff:** the busiest stretch, then 0.5s of near-silence on a held (frozen) picture, then the loudest hit, with partials above 400Hz (a phone speaker drops the sub); the payoff before ~85% of the length.
+- **Ending:** an end hold of at most 1.4s, or a loop back to frame 0 (`TIMELINE.reel.loop`, only for loopers: 8–15s).
+- **Timeline:** `TIMELINE.format: 'reel'`, `TIMELINE.reel = { hook: 1.0, endHold, loop: false, cover }`; `kit/captions.js` writes every chunk with its box to `TIMELINE.captions`.
+- **Checks (`tools/reel-check.mjs`, after export):** R1 frame 0 is not flat and text is on screen by 1.0s; R2 every caption chunk clear of the phone UI (FAIL); R3 with a voice, chunks and highlights within 2 frames of the words; R4 captions ≥ 50px at 1080 wide; R5 length (15–35s, WARN over 90s); R6 end hold ≤ 1.4s; R7 loudness −16..−13 LUFS, true peak ≤ −1 dBTP (WARN); R8 the loop seam (information unless `reel.loop`). `tools/cover.mjs` writes the cover frame (and the 3:4 grid and 4:5 feed crops), `captions.srt` / `.vtt` and a GIF preview.
+- **Fits:** a blog post's one finding, a feature's before and after, a failure and its fix, a launch teaser.
+- **Status:** new: the template `templates/reel/` (15s, crosshatch, 9:16 / 1:1 / 4:5, with or without a voice) passes its checks; no full piece yet.
 
 ## Format-specific rules (don't apply them everywhere)
 

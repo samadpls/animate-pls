@@ -11,7 +11,7 @@ Next: node tools/voice.mjs <piece> (it trims each take and puts the script's own
 import argparse
 import sys
 
-from voicelib import duration, find_audio, load_script, norm, save_script, silences, to_wav
+from voicelib import duration, find_audio, load_script, norm, samples16k, save_script, silences, to_wav
 
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 ap.add_argument('piece')
@@ -25,7 +25,7 @@ src = find_audio(VDIR, ROOT, a.take)
 total = duration(src)
 
 from faster_whisper import WhisperModel
-segs, _ = WhisperModel(a.model, device='cpu', compute_type='int8').transcribe(str(src), word_timestamps=True, beam_size=5, language=a.lang)
+segs, _ = WhisperModel(a.model, device='cpu', compute_type='int8').transcribe(samples16k(src), word_timestamps=True, beam_size=5, language=a.lang)
 heard = [(norm(w.word), w.start, w.end) for s in segs for w in (s.words or []) if norm(w.word)]
 if not heard:
     sys.exit(f'no speech heard in {src}')

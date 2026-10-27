@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit: a product video from a recording</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  EDIT TEMPLATE — 16:9 (and 9:16), 13.5s @ 24fps, crosshatch. A product video made from the user's own recording
+//  (edit mode, see edit.md): a title note on a desk, the recording in an inked card with eased zooms that land
+//  on its real events (the typed brief, the approve click, the finished video), a cursor and click rings, three
+//  hand-lettered captions, an end note. The recording is animate-pls itself at work (sample/studio.html).
+//  The footage (not committed; rebuild it): node tools/footage.mjs templates/edit --ensure   (it runs
+//  node tools/record.mjs templates/edit app templates/edit/sample/steps.json; an MP4 goes in with tools/footage.mjs). Then build and export: the tools feed the frames in (kit/footage.js).
+//  Without footage (a fresh clone, a plain browser preview) the card shows a labelled placeholder in the style.
+// =====================================================================
+const FORMATS = { '16:9': [1920, 1080], '9:16': [1080, 1920], '1:1': [1080, 1080], '4:5': [1080, 1350] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '16:9';   // the piece's main format first
+const FPS = 24, [W, H] = FORMATS[FORMAT];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 13.5;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { '9:16': { top: 240, bottom: 420, right: 140 }, '4:5': { top: 80, bottom: 160, right: 60 }, '1:1': { top: 60, bottom: 110, right: 60 }, '16:9': { top: 60, bottom: 110, right: 60 } }[FORMAT];
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';
+const CX = (W - SAFE.right) / 2;
+
+// ---- the edit. Times of clips, captions and cards are OUTPUT seconds; zooms are SOURCE seconds of the footage
+//      (here they name the recorder's events, so a new take re-times them by itself)
+const PRODUCT = { name: 'animate-pls', line: 'One brief in, repeatable video out', end: 'Explainers written in code' };
+const REC = typeof FOOTAGE !== 'undefined' && FOOTAGE.app ? FOOTAGE.app : null;
+const CLIP = { name: 'app', t0: 1.8, src0: 0.7 };
+CLIP.t1 = CLIP.t0 + Math.min(10.2, (REC ? REC.duration : 11.4) - CLIP.src0 - 0.3);
+const T_END = CLIP.t1 - 0.2;                                         // the end note starts taking over
+const CAPTIONS = [                                                   // { text, at: event, dt }: shown from that event to the next caption
+  { text: 'Brief it in one line', at: 'type:#q', dt: -0.3 },
+  { text: 'Approve the beats', at: 'click:#approve', dt: -0.6 },
+  { text: 'Rendered, ready to post', at: 'mark:#stage', dt: -0.1 },
+];
+
+const ERA_LIST = [[0, DURATION, () => sceneEdit()]];
+const SHOTS = [
+  ['title',   0, 0.0,      CLIP.t0,  'the product and its promise'],
+  ['footage', 0, CLIP.t0,  T_END,    'the recording: the brief, the beats, the render, the video'],
+  ['end',     0, T_END,    DURATION, 'the end card'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'edit',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  clips: [{ ...CLIP, show: [CLIP.t0 - 0.6, CLIP.t1 + 0.6] }],
+  zooms: [
+    { clip: 'app', event: 'type:#q', scale: 1.75 },                // the brief as it is typed
+    { clip: 'app', events: ['mark:#story', 'mark:#log'], pad: 0.06 }, // a pan to the beats, the approve click, the render
+    { clip: 'app', event: 'mark:#stage', scale: 1.55, hold: 1.2 }, // and to the finished video, then back out
+  ],
+  callouts: [],
+  redact: [],                                                      // e.g. { clip: 'app', t0: 0, t1: 99, x, y, w, h, mode: 'blur' }
+  cues: { note: 0.15, card: 1.5, end: T_END, hop2: T_END + 0.9 },
+  acts: [
+    { name: '1 Title',   role: 'build',   t0: 0.0,     t1: CLIP.t0 },
+    { name: '2 Product', role: 'journey', t0: CLIP.t0, t1: T_END },
+    { name: '3 End',     role: 'goodbye', t0: T_END,   t1: DURATION },
+  ],
+  board: [
+    { t: 1.1, title: 'title: the product and its promise', sound: 'a pencil, a soft pad', next: 'the recording slides up in a card' },
+    { t: 3.6, title: 'the brief, typed', sound: 'soft key ticks', next: 'pan to the beats' },
+    { t: 7.6, title: 'the beats approved, the render runs', sound: 'a click', next: 'pan to the video' },
+    { t: 10.4, title: 'the finished video plays', sound: 'a chime', next: 'the card slides away' },
+    { t: 13.2, title: 'end note', sound: 'the pad resolves', next: 'end' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

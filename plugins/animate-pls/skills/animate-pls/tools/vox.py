@@ -28,7 +28,7 @@ import subprocess
 import sys
 import time
 
-from voicelib import duration, find_audio, load_script, save_script, to_wav
+from voicelib import duration, find_audio, load_script, samples16k, save_script, to_wav
 
 ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 ap.add_argument('piece')
@@ -70,7 +70,7 @@ if a.ref:
         ref_text = cached.read_text(encoding='utf-8').strip()   # the user may have corrected it
     elif a.mode == 'clone':
         from faster_whisper import WhisperModel
-        segs, _ = WhisperModel(a.asr_model, device='cpu', compute_type='int8').transcribe(str(ref), beam_size=5)
+        segs, _ = WhisperModel(a.asr_model, device='cpu', compute_type='int8').transcribe(samples16k(ref), beam_size=5)
         ref_text = ' '.join(s.text.strip() for s in segs).strip()
         print(f'heard in the recording (saved to voice/ref.txt; fix it there if it is wrong, then rerun):\n  "{ref_text}"')
     if ref_text:

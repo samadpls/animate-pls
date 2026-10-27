@@ -1,17 +1,16 @@
 ---
 name: animate-pls
-description: Make a short procedural animation in any style — an explainer, a history, a product film, a little story — as a single-file canvas video with a synthesized score and an optional free, local voice-over (VoxCPM2, cloned from the user's own recording), rendered to MP4 in 9:16, 1:1, 4:5 and 16:9. Story formats include a one-take format where every beat is carried into the next with no cuts. Ships with styles (cut paper, crosshatch ink, riso print, sketchbook, manim-style math, pixel art, isometric line art) and makes new ones from the user's references. Walks the user through intake, then three check-ins (story, look, storyboard) before animating, and proves the result with measured review checks. Use when the user asks for an animated video, short, explainer or reel made in code, a narrated explainer for LinkedIn or YouTube, or wants a look matched from references.
-argument-hint: "[what the video is about] [style or reference]"
+description: Make short animated videos in code: explainers, histories, product films, reels and edits of the user's own screen recordings, as a single-file canvas video with a synthesized score and an optional free, local voice-over (VoxCPM2, cloned from the user's own recording), rendered to MP4 in 9:16, 1:1, 4:5 and 16:9. 20 designs, each named in one word: cutout, crosshatch, riso, sketchbook, math, pixel, isometric, kinetic, flat, clay, comic, chalkboard, linocut, watercolor, terminal, poster, seamless (one take, no cuts), reel (word captions), edit (the user's footage) and custom (a look matched from references). Walks the user through intake and check-ins, or a quick mode with one check-in, and proves the result with measured review checks. Use when the user asks for an animated video, explainer, reel, launch or product video made in code.
 license: MIT
 metadata:
   author: samadpls
-  version: 0.1.0
+  version: 0.2.0
   based-on: animate by cth9191 (MIT)
 ---
 
 # animate-pls
 
-*By [samadpls](https://github.com/samadpls). Built on [animate](https://github.com/cth9191/animate) by cth9191 (MIT): its styles, kit, grammar and tools, plus a free local voice, a one-take format and fixes for square and wide pieces.*
+*By [samadpls](https://github.com/samadpls). Built on [animate](https://github.com/cth9191/animate) by cth9191 (MIT): its styles, kit, grammar and tools, plus a free local voice, nine more styles, the seamless, reel and edit formats, and install for any agent.*
 
 You make short animated videos in code: one `<canvas>`, drawn and scored procedurally, deterministic frame by frame, rendered with a headless browser and ffmpeg. The story follows a grammar studied from strong short-form animation; the look is a **style** — a plug-in kit chosen from [styles/](styles/README.md) or made from the user's references with [new-style.md](new-style.md).
 
@@ -23,8 +22,8 @@ All paths below are relative to this skill's base directory. Pieces live in the 
 
 ## Non-negotiables
 
-1. **No animating before the storyboard is approved.** The check-ins exist because a wrong story or look costs a full build.
-2. **Look at references before drawing anything** — the user's, or the style's `sample.png` and demo. Then check every key frame against [grammar/FRAME.md](grammar/FRAME.md) and the style's own checklist in its `STYLE.md`.
+1. **No animating before the storyboard is approved** (in quick mode: before the beat table is approved). The check-ins exist because a wrong story or look costs a full build.
+2. **Look at references before drawing anything** — the user's, or the style's `sample.jpg` and demo. Then check every key frame against [grammar/FRAME.md](grammar/FRAME.md) and the style's own checklist in its `STYLE.md`.
 3. **Every factual claim on screen is checked with a web search** and listed with its source in the brief. Never claim "first" without a source.
 4. **Single file, all code:** one `index.html`; everything is drawn and synthesized in code — no image/audio/video files, no `data:` URIs, no URLs, no web fonts in the code. `tools/build.mjs` enforces it. Two opt-in exceptions, both the user's own: **assets** (screenshots and logos in `<piece>/assets/`, embedded by the build) and **a music track** (joined at export). See Assets and Music below.
 5. **Deterministic:** seeded randomness only (`RNG(...)`), the boil index `B` for per-step variation. Never `Math.random()` or wall-clock time.
@@ -32,6 +31,24 @@ All paths below are relative to this skill's base directory. Pieces live in the 
 7. **"Done" is measured:** `tools/review.mjs` passes and you have looked at the contact sheets. Report the numbers, not "looks good".
 8. **Ask with options,** a recommended default first, so the user can answer in one click (AskUserQuestion in Claude Code; a numbered list elsewhere).
 9. **Clone only a voice the user owns** — their own recording, or one whose owner consented. Never a public figure's, never one fetched from a site the user didn't point to.
+
+## Quick mode: one check-in, then the video
+
+Use it when the user says *quick*, *fast*, *just make it*, or asks for a piece of 30s or less with a named style or template; offer it at intake otherwise. Quick mode saves the user's waiting, never the quality: it starts from a finished, proven template and asks for one approval instead of three, but every quality gate still runs before the user sees anything:
+1. **One question round at most** (subject, size, voice), defaults for the rest (intake.md → Defaults). Skip the gallery when a style is named.
+2. **Start from the closest starter** and keep its structure; change the subject, words, colours and timing, not the machinery:
+
+| the ask | starter | style |
+|---|---|---|
+| a reel, a launch post, a hook with captions | [templates/reel/](templates/reel/) (F10) | kinetic, or any style |
+| a product demo from the user's screen recording or web app | [templates/edit/](templates/edit/) ([edit.md](edit.md)) | crosshatch, isometric or cut paper |
+| a product or feature film, "one continuous shot" | [templates/one-take/](templates/one-take/) (F9) | crosshatch or isometric |
+| an explainer or a history | the style's `demo/` | the one that fits the subject |
+| a hard-cut story on the beat | [templates/beat-cut/](templates/beat-cut/) | any |
+
+3. **One check-in:** the beat table (step 1 below) with the starter and style named.
+4. **You do the look and storyboard checks yourself** instead of waiting on the user: draw every beat, tile across every bridge, check each key frame against FRAME.md and the style's checklist, and redraw what fails. Facts are web-checked and `tools/review.mjs` must pass, exactly as in the full flow.
+5. Deliver the video with 3–4 stills from it (`tools/still.mjs`) and the review numbers, and ask what should change.
 
 ## The flow
 
@@ -47,7 +64,7 @@ Pick the **format** from [grammar/FORMATS.md](grammar/FORMATS.md) — the plot e
 Ask: **approve / change beats / different angle.** Revise until approved. This is where "I meant X, not Y" gets caught cheaply.
 
 ### 2. Look check (2–4 style frames)
-Start the piece at `pieces/<name>/`: copy `piece.json` and `src/` from the style's demo (`styles/<name>/demo/`) — it already speaks the style's kit and joins eras with a morph — or from [templates/beat-cut/](templates/beat-cut/) for a piece that cuts hard on the beat (8ths, a 16th-note rush on odd frames, one era per shot, framings from cameras), [templates/one-take/](templates/one-take/) for F9 (no cuts: a push through one object into the next world, then an object that becomes its counterpart; 1:1 crosshatch), or [templates/piece/](templates/piece/) for the plainest cut-paper morph. Set `"style"` in `piece.json`, then write `brief.md` and `LOG.md` fresh (the template's are placeholders).
+Start the piece at `pieces/<name>/`: copy `piece.json` and `src/` from the style's demo (`styles/<name>/demo/`) — it already speaks the style's kit and joins eras with a morph — or from [templates/beat-cut/](templates/beat-cut/) for a piece that cuts hard on the beat (8ths, a 16th-note rush on odd frames, one era per shot, framings from cameras), [templates/one-take/](templates/one-take/) for F9 (no cuts: a push through one object into the next world, then an object that becomes its counterpart; 1:1 crosshatch), [templates/reel/](templates/reel/) for a reel (F10: the hook on frame 0, word captions from `kit/captions.js`, 9:16 / 1:1 / 4:5, with or without a voice), [templates/edit/](templates/edit/) for the user's own footage (read [edit.md](edit.md)), or [templates/piece/](templates/piece/) for the plainest cutout morph. Set `"style"` in `piece.json`, then write `brief.md` and `LOG.md` fresh (the template's are placeholders).
 - **A shipped style:** read its `STYLE.md` and demo and draw with its kit.
 - **The user's references:** follow [new-style.md](new-style.md). Measure the references first (`tools/measure/refs.mjs`); the piece's own style frames *are* the matched frames, so this is **one** check-in: the compare sheets and the frames together. Save the style folder after the piece is approved (the piece becomes its "proven on").
 
@@ -63,7 +80,7 @@ Draw every beat in the approved look. Fill `TIMELINE.board` with one key time pe
 4. Test tiles while building: `node tools/tile.mjs pieces/<name> tile.png <frames...>` — look at them; tile across every morph and cut.
 5. Score in `src/score.js` (see craft.md → Sound).
 6. `node tools/export.mjs pieces/<name> --share` → frames, `audio.wav`, stems, `renders/final.mp4`, `renders/share.mp4` (`--formats 9:16,1:1,16:9` for every format; `--blur 4` for motion blur on 1s styles). Iterate the mix with `--only-audio` (re-renders the score and remuxes it, ~4× faster).
-7. `node tools/review.mjs pieces/<name>` → contact sheets per shot, cut grid, morph grid, story arc, anchor, **text** (cut off / overlapping / under the phone UI) and **sound** (the loudest moment, the silence before it, LUFS). Fix until it passes, view the sheets, write a per-shot PASS table in `LOG.md`. Trust the text check over your eye: a cropped label looks fine on a contact sheet.
+7. `node tools/review.mjs pieces/<name>` → contact sheets per shot, cut grid, morph grid, story arc, anchor, **text** (cut off / overlapping / under the phone UI) and **sound** (the loudest moment, the silence before it, LUFS). Fix until it passes, view the sheets, write a per-shot PASS table in `LOG.md`. Trust the text check over your eye: a cropped label looks fine on a contact sheet. A reel also runs `tools/reel-check.mjs` (hook, captions clear of every platform's buttons, size, length, end hold, loudness); then `node tools/cover.mjs pieces/<name> --gif 360` writes `cover.png`, `captions.srt` / `.vtt` and a GIF.
 
 ### 5. Deliver
 Send `renders/share.mp4`. Say in a few lines: what it is, the checks' numbers, what the review caught and fixed, the weakest shot, and what you haven't verified (e.g. you can't listen to the score). Ask what should change: story, look, transitions, pacing, sound.
@@ -79,7 +96,7 @@ Ask at intake (question 3). With a voice, **the voice is the clock**: each beat 
 3. **The takes:** one file per line in `voice/`, with `"file"` set on the line. Four ways, the user picks at intake (question 3):
    - **VoxCPM2 with the user's own voice** *(the default: free, local, any OS)*. Ask the user for 15–30s of themselves talking naturally, in their own accent (a phone voice memo in a quiet room is fine; any format), saved as `voice/me.m4a` (or `.mp3`, `.wav`). Then:
      1. `node tools/vox.mjs pieces/<name> --ref me.m4a --audition` → the first line in 6 settings (clone / timbre × cfg 1.3 / 1.6 / 2.0) under `voice/audition/`. The words it heard in the recording are in `voice/ref.txt`: show them, and if they're wrong fix the file and rerun (an exact transcript keeps the accent closest).
-     2. Let the user listen and pick. If every take drifts toward a generic accent, lower `--cfg` (1.3 leans hardest on the recording) or ask for a longer recording; never "fix" an accent with a text description.
+     2. Let the user listen and pick. Clone mode copies the energy of the recording: for a launch or a reel, ask for a lively recording, or offer `--cfg 2.0` with punchier punctuation, and play the takes at full loudness (the raw takes sound quiet next to the final mix at -14 LUFS). If every take drifts toward a generic accent, lower `--cfg` (1.3 leans hardest on the recording) or ask for a longer recording; never "fix" an accent with a text description.
      3. `node tools/vox.mjs pieces/<name> --ref me.m4a --mode <picked> --cfg <picked>` → every line. A line over 3.5 words/s gets flagged: add `--tempo 0.92`. One line again: `--only <id>`.
    - **A designed voice** (no recording): `--design "(a warm, calm narrator, mid-30s, unhurried)"` in place of `--ref`. Describe tone, age and pace, never an accent by nationality or ethnicity (it comes out as a caricature).
    - **ElevenLabs by hand** (no API key; the free plan works): add an Eleven v3 tag to a line where the delivery matters (`"tag": "[curious]"`), run `node tools/eleven-script.mjs pieces/<name>` and give the user the text it prints. They paste it into ElevenLabs (Text to Speech, model Eleven v3, their voice), download the MP3 and save it as `voice/take.mp3`; then `node tools/split-take.mjs pieces/<name>` cuts it into one take per line, in the silences between lines (it says how many words it heard per line; listen to any it flags). **The ElevenLabs connector**, if the user has it in their agent, can make the takes directly: one line in 2–3 voices to pick from, then every line once; about one credit per character, say the total first.
@@ -106,6 +123,14 @@ Ask at intake (question 7) when the subject is a product. Then:
 - Draw them with `drawAsset('home.png', x, y, w, h, { fit: 'cover' | 'contain', r })` inside the style's own framing (a torn-paper photo, an inked frame, a printed card) so they belong to the look. `asset(name)` returns the image.
 - **Real product UI only:** animate the real screens (crop, push in, reveal, point at them with the hero); never draw a fake screen as if it were the product. Sample brand colours from the screenshots.
 
+## Edit mode: the user's own footage
+
+When the user brings a screen recording or a demo video, or wants a product video of their own web app, read [edit.md](edit.md) and start from [templates/edit/](templates/edit/). `tools/footage.mjs` imports a video (cuts dead air, suggests zooms, makes a contact sheet); `tools/record.mjs` records a web app from a short script of clicks and typing, frame by frame. `kit/footage.js` frames the footage in the chosen design with zooms on the real events. Only edit footage the user owns, and blur personal data on screen.
+
+## 3D
+
+animate-pls has no 3D style. When the user wants real 3D, say so, then offer this path: write the scene as a three.js page (MIT; the threejs-skills pack helps you write it), serve it locally, record it with `tools/record.mjs` (its fake clock steps the WebGL animation frame by frame, so takes are identical), and finish it as an edit with captions, voice and music. Tell the user the costs: three.js is a separate install, WebGL renders in software in a headless browser, and pixels can differ a little between machines.
+
 ## Formats: one piece, several shapes (optional)
 
 Ask at intake (question 2, multi-select). List them in `piece.json` `"formats": ["9:16", "1:1", "16:9"]` (the first is the main one). The starter's head reads `?format=` and sets `W`, `H`, `SAFE` and `CX`; scenes place things with `LX(fraction)`, `LY(fraction)` and size them with `UNIT`, and choose a different arrangement with `PORTRAIT` / `WIDE` where a shape needs it (a column of three on 9:16, a row of three on 16:9). Never crop a 9:16 render to 16:9.
@@ -131,19 +156,21 @@ A 45–60s piece has 10–15 scenes; split the drawing across agents once the st
 |---|---|---|
 | [intake.md](intake.md) | the questions and defaults | step 0 |
 | [craft.md](craft.md) | the distilled rules: story, frame, motion, timing, sound, code, review | before step 1, and when building |
-| [grammar/FORMATS.md](grammar/FORMATS.md) | 9 story formats (engine × stage × clock), invariants, which are proven; F9 is the one take | step 1 |
+| [grammar/FORMATS.md](grammar/FORMATS.md) | 10 story formats (engine × stage × clock), invariants, which are proven; F9 is the one take | step 1 |
 | [grammar/STORY.md](grammar/STORY.md) | beat-level story rules with evidence | step 1 |
 | [grammar/FRAME.md](grammar/FRAME.md) | what a single key frame must hold, in any style | steps 2–3 |
-| [styles/](styles/README.md) | the styles: `STYLE.md` (rules + frame checklist), `kit.js`, `sample.png`, `demo/`; the STYLE hooks contract | steps 0, 2, building |
+| [styles/](styles/README.md) | the styles: `STYLE.md` (rules + frame checklist), `kit.js`, `sample.jpg` (its picker thumbnail), `demo/`; the STYLE hooks contract | steps 0, 2, building |
 | [new-style.md](new-style.md) | making a new style from the user's references | step 2 |
 | `kit/core.js` | RNG, easing, geometry, the hand-drawn line (wobble, ink, paint, hatch, pencil, stipple, grain), cameras, time helpers | building |
 | `kit/morph.js` | the renderer: eras, push-ins, zoom bumps, shape-morph bridges, one-take carries (`through`, `match`), overlays — draws through the style's STYLE hooks | building |
 | `kit/board.js` | the storyboard renderer | steps 2–3 |
 | `kit/score-*.js` | synth (pluck, pad, drone, bass, sub, noiseHit, sweep, riser, chime, blip), loudness stage | scoring |
-| [templates/](templates/) | `piece/` (an 8s cut-paper morph), `beat-cut/` (a 6s hard-cut piece with a 16th rush), `one-take/` (a 10s 1:1 crosshatch F9 piece: a push through and a match), `style/` (a blank style kit for new looks) | step 2 |
-| `tools/` | build, tile, still, storyboard, export, review, textcheck, compare (reference vs frame), gallery, framehash (pixel-identity check), beats (a supplied track's beat map), capture (screenshots of the user's site), voice (a voice-over's lines and word times); `measure/` for references (`refs.mjs` for stills, `shotlog.py` for video) | throughout |
+| [templates/](templates/) | `piece/` (an 8s cutout morph), `beat-cut/` (a 6s hard-cut piece with a 16th rush), `one-take/` (the seamless design: a 10s 1:1 crosshatch F9 piece, a push through and a match), `reel/` (a 15s F10 reel with word captions), `edit/` (a product video from a recording of animate-pls itself), `style/` (a blank style kit for new looks) | step 2 |
+| [edit.md](edit.md) | edit mode: the user's own footage or a recording of their web app, framed, zoomed and captioned | when the user brings footage |
+| `kit/captions.js`, `kit/footage.js` | word-by-word captions (reels); footage in a card with zooms, cursor, click rings, callouts, redaction (edit mode) | reels, edits |
+| `tools/` | build, tile, still, storyboard, export, review, textcheck, compare (reference vs frame), gallery, framehash (pixel-identity check), beats (a supplied track's beat map), capture (screenshots of the user's site), voice (a voice-over's lines and word times), footage and record (edit mode), reel-check and cover (reels), selftest (the whole suite on this machine), check-manifests (the plugin files agree); `measure/` for references (`refs.mjs` for stills, `shotlog.py` for video) | throughout |
 | voice tools | `voice-setup.mjs` (the voice env, once), `vox.mjs` (VoxCPM2 takes: cloned or designed, `--audition`), `split-take.mjs` (one long take → a take per line), `eleven-script.mjs` (paste-ready ElevenLabs text), `voice.mjs` (word times, `voice.wav`) | voice-over |
-| [examples/history-of-ai/](examples/history-of-ai/) | a full 60s worked example (cut paper) | when unsure how something fits |
+| [examples/history-of-ai/](examples/history-of-ai/) | a full 60s worked example (cutout) | when unsure how something fits |
 
 ## Honesty about what's proven
-Formats F2 (chronology / morph chain) and F4 (mission) have each produced a piece that passed every check from the card alone; F5 (fixed-hero journey) has several, narrated ones included. F9 (one take) is new: its template passes every check, no full piece yet. The others are documented from study but unproven — say so when you pick one. Voice: VoxCPM2 cloning has been tested on macOS (Apple Silicon); Linux and Windows run the same code but haven't been tested end to end yet. Cut paper and crosshatch have carried full pieces; riso, sketchbook, math and pixel each come from one or two finished pieces plus a demo; isometric was made from references with new-style.md and so far has only its demo; a style made from new references is new ground until it has carried a piece. WebGL motion design (ray-marched 3D, motion blur, bloom) is not a shipped style yet.
+Formats F2 (chronology / morph chain) and F4 (mission) have each produced a piece that passed every check from the card alone; F5 (fixed-hero journey) has several, narrated ones included. F9 (seamless) and F10 (reel) are new: their templates pass every check, no full piece yet. The others are documented from study but unproven: say so when you pick one. Cutout and crosshatch have carried full pieces; riso, sketchbook, math and pixel each come from one or two finished pieces plus a demo; isometric, kinetic, flat, clay, comic, chalkboard, linocut, watercolor, terminal and poster have only their demo and a gallery tile; a style made from new references is new ground until it has carried a piece. Edit mode is tested on recordings of animate-pls and on synthetic footage, not yet on a real QuickTime or OBS recording. The tools run on macOS and Linux (tested); Windows is not tested yet.

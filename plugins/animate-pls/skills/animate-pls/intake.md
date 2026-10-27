@@ -13,7 +13,8 @@ Ask only what you can't infer from the request. In Claude Code, AskUserQuestion 
    - 1:1 — a feed post *(recommended for LinkedIn: it fills the feed on phone and desktop)*
    - 4:5 — an Instagram / LinkedIn feed post
 
-   Length: 20–30s for a quick social piece, 45–60s for a history or explainer. **Several formats** come from one piece: list them in `piece.json` `"formats"` and lay the scenes out with `LX` / `LY` / `UNIT` (SKILL.md → Formats). Each extra format costs a little layout work, not a new piece.
+   Length: 20–30s for a quick social piece, 45–60s for a history or explainer, 15–35s for a reel (8–15s for a looper).
+   When 9:16 is picked, ask which platforms it is for (TikTok / Reels / Shorts / LinkedIn, default all) and write `"review": { "platforms": [...] }` in piece.json: captions then stay clear of those apps' buttons. For LinkedIn suggest 4:5 or 1:1 as the main format and 15–30s. **Several formats** come from one piece: list them in `piece.json` `"formats"` and lay the scenes out with `LX` / `LY` / `UNIT` (SKILL.md → Formats). Each extra format costs a little layout work, not a new piece.
 
 3. **Voice?** You write the script either way; the picture is timed to the words (SKILL.md → Voice-over).
    - **Your own voice, cloned free with VoxCPM2:** drop 15–30s of yourself talking naturally (any recording, a phone voice memo is fine) and it speaks every line in your voice and your accent, locally *(recommended for an explainer over ~30s)*
@@ -26,13 +27,13 @@ Ask only what you can't infer from the request. In Claude Code, AskUserQuestion 
    With a VoxCPM2 voice, check the voice env first (`node tools/voice-setup.mjs --check`; run it without `--check` to install, ~5 GB once).
 
 4. **The look?** *(skip the gallery when the request already names a style or brings references — go to new-style.md or the named style)* Build the gallery (`node tools/gallery.mjs <out.png> [<project>/styles]`), show it, then ask:
-   - One of these: cut paper / crosshatch ink / riso print / sketchbook / math / pixel / isometric *(recommend the one that fits the subject: cut paper for histories and stories, crosshatch for Claude Code explainers, math for anything with equations or graphs, pixel for computing history, isometric for products, devices and infrastructure, riso or sketchbook for a softer editorial feel)*
+   - One of these, by its one-word name: cutout / crosshatch / riso / sketchbook / math / pixel / isometric / kinetic / flat / clay / comic / chalkboard / linocut / watercolor / terminal / poster *(recommend the one that fits the subject: cutout for histories and stories, crosshatch for tool and code explainers, math for equations and graphs, pixel for computing history, isometric for products and infrastructure, kinetic for reels and launch posts, flat for science and process explainers, clay for warm personal stories, comic for a funny explainer, chalkboard for a lesson or a diagram, linocut for a quote or a bold statement, watercolor for places and gentle stories, terminal for developer tools, poster for an announcement, riso or sketchbook for a softer editorial feel)*
    - A style they've made before (any `styles/<name>/` in their project)
-   - My own references (the gallery's last tile, "custom") — links or files (videos, stills, a web page): follow [new-style.md](new-style.md); keep the media local and uncommitted
+   - custom: my own references (the gallery's last tile) — links or files (videos, stills, a web page): follow [new-style.md](new-style.md); keep the media local and uncommitted
    - Surprise me
 
 5. **A hero?** *(ask only if the format wants one)*
-   - The style's hero (cut paper: the spark, a small orange character that grows with the story; crosshatch: an ink dot with eyes; …) *(recommended)*. **For a new style from references,** propose a hero native to the medium (a red seal for woodblock prints, a cursor for terminals, a pawn for a board game) as the recommended option.
+   - The style's hero (cutout: the spark, a small orange character that grows with the story; crosshatch: an ink dot with eyes; …) *(recommended)*. **For a new style from references,** propose a hero native to the medium (a red seal for woodblock prints, a cursor for terminals, a pawn for a board game) as the recommended option.
    - An existing character (describe it)
    - No hero — the subject itself is the constant
 
@@ -47,7 +48,7 @@ Ask only what you can't infer from the request. In Claude Code, AskUserQuestion 
 8. **Brand rules?** *(ask only with 7 = yes)* Colours, fonts, the one accent colour, words to avoid. Defaults: sample them from the screenshots.
 
 ## Defaults when unanswered
-9:16, 1080×1920, 24fps, 120 BPM (an 8th = 6 frames exactly), 30–60s, music only (composed in code), no assets, the style that fits the subject (cut paper if unsure), the style's own hero, format chosen from FORMATS.md by the plot engine.
+9:16, 1080×1920, 24fps, 120 BPM (an 8th = 6 frames exactly), 30–60s, music only (composed in code), no assets, the design that fits the subject (cutout if unsure), the style's own hero, format chosen from FORMATS.md by the plot engine.
 
 ## Pick the format yourself
-Don't ask the user to choose a story format — it's grammar, not taste. A history or a process over time → chronology joined by shape morphs (F2). Someone wants something and a helper solves it → mission, cut on the beat (F4). One carried thing through many places → fixed-hero journey (F5). A question answered by a list → catalogue (F3). A product or feature film, or "make it feel like one continuous shot, not slides" → one take (F9, new). State the choice at the story check so they can veto it. When two formats fit (a process can be a chronology or a machine), prefer the **proven** one (see FORMATS.md status lines) and say so.
+Don't ask the user to choose a story format — it's grammar, not taste. A history or a process over time → chronology joined by shape morphs (F2). Someone wants something and a helper solves it → mission, cut on the beat (F4). One carried thing through many places → fixed-hero journey (F5). A question answered by a list → catalogue (F3). A product or feature film, or "make it feel like one continuous shot, not slides" → seamless (F9, new). A short vertical post with a hook and captions → reel (F10, new). The user's own footage or app → edit (edit.md). State the choice at the story check so they can veto it. When two formats fit (a process can be a chronology or a machine), prefer the **proven** one (see FORMATS.md status lines) and say so.

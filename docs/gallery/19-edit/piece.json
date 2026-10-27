@@ -1,0 +1,12 @@
+{
+  "name": "gallery-15-edit",
+  "title": "animate-pls · edit mode",
+  "format": { "width": 1080, "height": 1080, "fps": 24, "bpm": 120, "duration": 3.5, "frames": 84 },
+  "formats": ["1:1"],
+  "storyFormat": "edit (one recording, a zoom, a click, a pan; gallery tile and launch-montage clip)",
+  "style": "cutout",
+  "thumb": 3.1,
+  "build": ["src/head.html", "kit/core.js", "style", "kit/footage.js", "src/scenes.js", "src/bridges.js", "kit/morph.js", "kit/board.js", "kit/score-head.js", "src/score.js", "kit/score-tail.js"],
+  "footage": { "app": { "record": "../../../plugins/animate-pls/skills/animate-pls/templates/edit/sample/steps.json" } },
+  "review": { "safe": { "top": 60, "bottom": 60, "right": 60 }, "refs": {} }
+}

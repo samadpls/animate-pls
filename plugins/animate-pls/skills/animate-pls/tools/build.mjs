@@ -5,14 +5,17 @@
 //   head, kit/core, style, scenes, bridges, kit/morph (the renderer), kit/board, kit/score-head, score, kit/score-tail
 // Part names:
 //   "kit/<file>"            this skill's kit/
-//   "style"                 the kit.js of the style named by piece.json "style" (default "cut-paper")
+//   "style"                 the kit.js of the style named by piece.json "style" (default "cutout")
 //   "styles/<name>/<file>"  a file of a named style
 //   anything else           relative to the piece dir
 // A style is found in a styles/<name>/ folder beside the piece or above it, then in this skill's styles/
 // (so a style made for one project, e.g. <project>/styles/my-look/, works for every piece in that project).
-// Checks: the script compiles; the style defines STYLE; no data: URIs and no http(s) URLs in the code.
-// Generated parts: <piece>/beats.json -> const BEATS (a supplied track's beat map); <piece>/voice.json -> const VOICE (voice-over timing); <piece>/assets/* -> const ASSETS
-// (the user's own screenshots and logos, embedded; window.renderFrame appears once they're decoded).
+// Checks: the script compiles; the style defines STYLE; no data: URIs and no http(s) URLs in the code; the piece's own
+// code (src parts, style kit) uses no Math.random / Date.now / new Date( / performance.now and redeclares no top-level name
+// of kit/core.js, morph.js, board.js, score-head.js or score-tail.js.
+// Generated parts: <piece>/beats.json -> const BEATS (a supplied track's beat map); <piece>/voice.json -> const VOICE (voice-over timing);
+// <piece>/footage.json -> const FOOTAGE (footage metadata only: the frames come in through tools/lib/pw.mjs's frame feed);
+// <piece>/assets/* -> const ASSETS (the user's own screenshots and logos, embedded; window.renderFrame appears once they're decoded).
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -24,7 +27,7 @@ const dir = process.argv[2];
 if (!dir) { console.error('usage: node tools/build.mjs <piece dir>'); process.exit(2); }
 const ROOT = path.resolve(dir);
 const meta = fs.existsSync(path.join(ROOT, 'piece.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'piece.json'), 'utf8')) : {};
-const styleName = meta.style || 'cut-paper';
+const styleName = meta.style || 'cutout';
 // a style's folder: the piece's own tree first (walking up), then the skill
 function styleDir(name) {
   for (let d = ROOT; ; d = path.dirname(d)) {
@@ -40,7 +43,6 @@ function styleDir(name) {
 }
 function resolve(p) {
   if (p === 'style') return path.join(styleDir(styleName), 'kit.js');
-  if (p === 'kit/paper.js') return path.join(SKILL, 'styles', 'cut-paper', 'kit.js');   // the v0.1 name
   if (p.startsWith('kit/')) return path.join(SKILL, 'kit', p.slice(4));
   const m = p.match(/^styles\/([^/]+)\/(.+)$/);
   if (m && !fs.existsSync(path.join(ROOT, p))) return path.join(styleDir(m[1]), m[2]);
@@ -48,15 +50,35 @@ function resolve(p) {
 }
 // "scenes": ["src/era-01.js", ...] swaps src/scenes.js for several files in the default order (one per agent / era)
 const parts = meta.build || (meta.scenes ? DEFAULT.flatMap((p) => (p === 'src/scenes.js' ? meta.scenes : [p])) : DEFAULT);
-let out = '';
-for (const p of parts) {
+const texts = parts.map((p) => {
   const file = resolve(p);
   if (!fs.existsSync(file)) { console.error(`missing part: ${p} (${file})`); process.exit(1); }
-  out += fs.readFileSync(file, 'utf8').replace(/\s*$/, '\n');
-}
+  return [p, fs.readFileSync(file, 'utf8').replace(/\s*$/, '\n')];
+});
+let out = texts.map(([, t]) => t).join('');
+
+// ---- the piece's own code (src parts and the style kit, not this skill's kit/ and not the injected data):
+// deterministic (no Math.random or clock), and no top-level name the shared kit already declares
+// (a second `function` silently replaces the kit's, a second `const` is a SyntaxError)
+const own = texts.filter(([p]) => !p.startsWith('kit/'));
+const CLOCK = /\bMath\.random\b|\bDate\.now\b|\bnew Date\(|\bperformance\.now\b/;
+const clock = own.flatMap(([p, t]) => t.split('\n').map((l, i) => [p, i + 1, l.replace(/\/\/.*$/, '')]).filter(([, , l]) => CLOCK.test(l)));
+if (clock.length) { console.error('not deterministic (use RNG(...) and TT, never Math.random or the clock):', clock.slice(0, 5).map(([p, n, l]) => `${p}:${n} ${l.match(CLOCK)[0]}`).join(' | ')); process.exit(1); }
+// top-level declarations: `function NAME` / `const|let|var A = .., B = ..` at the start of a line
+const declared = (t) => t.split('\n').flatMap((l, i) => {
+  const f = l.match(/^(?:async\s+)?function\s*\*?\s*([\w$]+)/); if (f) return [[f[1], i + 1]];
+  const d = l.match(/^(?:const|let|var)\s+(.*)/); if (!d) return [];
+  let s = d[1].replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '0').replace(/\/\/.*$/, ''), k;
+  while ((k = s.replace(/\([^()]*\)|\[[^[\]]*\]|\{[^{}]*\}/g, '')) !== s) s = k;   // drop bracketed parts: only the declarators' commas stay
+  return s.replace(/[([{].*$/, '').split(',').map((x) => (x.match(/^\s*([\w$]+)\s*=/) || [])[1]).filter(Boolean).map((n) => [n, i + 1]);
+});
+const KIT = new Map(texts.filter(([p]) => ['kit/core.js', 'kit/morph.js', 'kit/board.js', 'kit/score-head.js', 'kit/score-tail.js', 'kit/captions.js', 'kit/footage.js'].includes(p)).flatMap(([p, t]) => declared(t).map(([n]) => [n, p])));
+const inScore = (p) => parts.indexOf(p) > parts.indexOf('kit/score-head.js') && parts.indexOf(p) < parts.indexOf('kit/score-tail.js');   // the score body sits inside buildScore()
+const clash = own.filter(([p]) => !inScore(p)).flatMap(([p, t]) => declared(t).filter(([n]) => KIT.has(n)).map(([n, i]) => `${p}:${i} "${n}" (declared by ${KIT.get(n)})`));
+if (clash.length) { console.error('redeclares a kit name (give it a prefix, as styles/README.md says):', clash.slice(0, 5).join(' | ')); process.exit(1); }
 const m = out.match(/<script>([\s\S]*)<\/script>/);
 if (!m) { console.error('no <script> block found'); process.exit(1); }
-if (!/\bconst STYLE\s*=/.test(m[1])) { console.error('no STYLE hooks: the style kit must define `const STYLE = { ... }` (see styles/cut-paper/kit.js)'); process.exit(1); }
+if (!/\bconst STYLE\s*=/.test(m[1])) { console.error('no STYLE hooks: the style kit must define `const STYLE = { ... }` (see styles/cutout/kit.js)'); process.exit(1); }
 // the code itself: no data: URIs, no URLs (the user's own assets are added below, from <piece>/assets/ only)
 const bad = out.split('\n').map((l, i) => [i + 1, l]).filter(([, l]) => /data:[a-z]+\/|https?:\/\//i.test(l));
 if (bad.length) { console.error('forbidden (data: URI or http URL):', bad.slice(0, 5).map(([n, l]) => `${n}: ${l.trim().slice(0, 80)}`).join(' | ')); process.exit(1); }
@@ -70,6 +92,14 @@ if (fs.existsSync(beatsFile)) inject.push(`// ---- beats.json (tools/beats.mjs):
 const voiceFile = path.join(ROOT, 'voice.json');
 if (fs.existsSync(voiceFile)) { const V = JSON.parse(fs.readFileSync(voiceFile, 'utf8')); V.lines.forEach((l) => delete l.take); inject.push(`// ---- voice.json (tools/voice.mjs): the voice-over's lines and word times
 const VOICE = ${JSON.stringify(V)};`); }
+// footage metadata (sizes, fps, frame counts, clip names): the frames themselves are fed by the tools (tools/lib/pw.mjs),
+// so the page holds no frame data, no URL and no data: URI
+const footageFile = path.join(ROOT, 'footage.json');
+if (fs.existsSync(footageFile)) {
+  const txt = JSON.stringify(JSON.parse(fs.readFileSync(footageFile, 'utf8')));
+  if (/data:[a-z]+\/|https?:\/\//i.test(txt) || txt.length > 1e6) { console.error('footage.json is metadata only: no data: URIs, no URLs, under 1 MB (frames are fed by the tools, read with window.__pieceFile)'); process.exit(1); }
+  inject.push(`// ---- footage.json: the footage's metadata (its frames come from the tools' frame feed)\nconst FOOTAGE = ${txt};`);
+}
 // the user's own assets: screenshots and logos in <piece>/assets/, embedded so the piece stays one file and
 // the canvas stays readable (an image loaded from a file:// URL would taint it and break every check)
 const ASSET_DIR = path.join(ROOT, 'assets'), MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml' };
@@ -92,6 +122,6 @@ if (assetFiles.length) {
 const m2 = out.match(/<script>([\s\S]*)<\/script>/);
 try { new vm.Script(m2[1], { filename: 'index.html' }); } catch (e) { console.error('syntax error:', e.message); process.exit(1); }
 fs.writeFileSync(path.join(ROOT, 'index.html'), out);
-const extras = [fs.existsSync(beatsFile) ? 'beats.json' : null, fs.existsSync(voiceFile) ? 'voice.json' : null, assetFiles.length ? `${assetFiles.length} asset(s), ${(assetBytes / 1e6).toFixed(1)} MB` : null].filter(Boolean);
+const extras = [fs.existsSync(beatsFile) ? 'beats.json' : null, fs.existsSync(voiceFile) ? 'voice.json' : null, fs.existsSync(footageFile) ? 'footage.json' : null, assetFiles.length ? `${assetFiles.length} asset(s), ${(assetBytes / 1e6).toFixed(1)} MB` : null].filter(Boolean);
 if (assetBytes > 12e6) console.warn(`warning: ${(assetBytes / 1e6).toFixed(1)} MB of assets — resize screenshots to the size they're shown at`);
 console.log(`built ${path.join(ROOT, 'index.html')}: ${out.split('\n').length} lines from ${parts.length} parts (style: ${styleName})${extras.length ? ' + ' + extras.join(' + ') : ''}; syntax ok; no external assets`);

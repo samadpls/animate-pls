@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel: three cache failures</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  REEL — F10 (grammar/FORMATS.md): ~15s @ 120 BPM, 24fps, crosshatch, in 9:16 (main), 1:1 and 4:5.
+//  The hook lands on frame 0 (the database already on fire under a big "3"), beats cut on 8ths every 1.5–2.5s,
+//  word-by-word captions throughout (kit/captions.js), half a second of silence, one payoff hit, a 1.2s end hold.
+//  Story (samadpls.com, "Three Redis failures that look similar until production"): penetration, stampede and
+//  avalanche all set the database on fire; TTL jitter puts the last one out.
+//  The constant: one stage (the cache above, the database with a face below). Colour means one thing:
+//  red = load on the database, cyan = a key the cache can serve, magenta = the hot key, green = the fix;
+//  yellow is kept for the active caption word.
+//  No voice: the words come from CAPTION_SCRIPT below, spread over each line by letter count.
+//  With a voice: voice/script.json holds the same lines. `node tools/voice.mjs <piece> --scratch` makes a timing
+//  voice with the OS's speech; the build injects VOICE, the captions follow its words and every cut below moves
+//  with its lines (cuts sit on the 8th nearest the pause between two lines).
+//  Build: node <skill>/tools/build.mjs <piece>. Preview: open index.html (?t=2.5 freezes a frame, ?format=1:1).
+// =====================================================================
+const FORMATS = { '9:16': [1080, 1920], '4:5': [1080, 1350], '1:1': [1080, 1080] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '9:16';
+const FPS = 24, [W, H] = FORMATS[FORMAT] || FORMATS['9:16'];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = typeof BEATS !== 'undefined' ? BEATS.bpm : 120, GRID0 = typeof BEATS !== 'undefined' ? BEATS.offset : 0;
+const BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;   // at 120 BPM: 0.5 / 0.25 / 0.125s = 12 / 6 / 3 frames
+const onBeat = (t) => +(GRID0 + Math.round((t - GRID0) / E8) * E8).toFixed(4);
+const onBeatUp = (t) => +(GRID0 + Math.ceil((t - GRID0) / E8 - 1e-6) * E8).toFixed(4);
+// where text may sit. 9:16: the union of the TikTok, Reels and Shorts UI at 1080x1920 (TikTok 240/660/120/120 and a
+// button rail at x >= 780 from y 840; Reels 269/672/65/65; Shorts 288/672/48/192) leaves x 120–888, y 288–1248
+const SAFE = { '9:16': { top: 288, bottom: 672, left: 120, right: 192 }, '4:5': { top: 80, bottom: 160, left: 60, right: 60 }, '1:1': { top: 60, bottom: 70, left: 60, right: 60 } }[FORMAT] || { top: 60, bottom: 110, left: 60, right: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts: Windows, macOS, Linux
+const CX = (SAFE.left + W - SAFE.right) / 2;               // the centre of the safe band (504 on 9:16)
+
+// ---- the script: one line per beat (voice/script.json has the same lines). t / t1 = when the line is said
+const CAPTION_SCRIPT = [
+  { id: 'hook',   t: 0.15,  t1: 1.9,  text: 'Three Redis failures look the same.' },
+  { id: 'pen',    t: 2.1,   t1: 3.9,  text: "Penetration: keys that don't exist" },
+  { id: 'pen2',   t: 4.1,   t1: 5.3,  text: 'always miss the cache.' },
+  { id: 'stamp',  t: 5.6,   t1: 7.3,  text: 'Stampede: one hot key expires' },
+  { id: 'stamp2', t: 7.6,   t1: 8.85, text: 'everyone misses at once.' },
+  { id: 'aval',   t: 9.1,   t1: 11.1, text: 'Avalanche: many keys expire together.' },
+  { id: 'fix',    t: 12.15, t1: 13.5, text: 'The fix: TTL jitter.' },
+];
+// captions in the style's own hand: the crosshatch lettering, a paper fill on a thick ink edge that boils with the
+// drawing, and a yellow marker swipe under the word being said (yellow is used for nothing else)
+const CAPTION_OPTS = { maxWords: 3, font: HAND, weight: 700, upper: false, fill: '#f4ecd9', stroke: '#1f140c', accent: '#f0c55a', mode: 'marker', boil: true };
+// the line times the picture follows: the voice's when there is one, else the script's
+const LINE = (id) => {
+  const v = typeof VOICE !== 'undefined' && VOICE.lines.find((l) => l.id === id);
+  if (v) return { t0: v.t0, t1: v.t1 };
+  const s = CAPTION_SCRIPT.find((l) => l.id === id); return { t0: s.t, t1: s.t1 };
+};
+const between = (a, b) => onBeat((LINE(a).t1 + LINE(b).t0) / 2);   // a cut in the pause between two lines
+const CUT = {};
+CUT.pen = between('hook', 'pen');           // 2.0
+CUT.penC = between('pen', 'pen2');          // 4.0
+CUT.stamp = between('pen2', 'stamp');       // 5.5
+CUT.rush = between('stamp', 'stamp2');      // 7.5
+CUT.aval = between('stamp2', 'aval');       // 9.0
+const at = (id, k) => LINE(id).t0 + k * (LINE(id).t1 - LINE(id).t0);
+CUT.exp = onBeat(at('stamp', 0.8));         // 7.0: the hot key expires, on "expires"
+CUT.expA = Math.round(at('aval', 0.55) / E16) * E16;   // 10.25: every key expires together, on "expire"
+CUT.flood = onBeat(CUT.expA + 0.5);         // 10.75: cut in on the flood
+CUT.hush = onBeatUp(LINE('aval').t1 + 0.35);   // 11.5: the last caption has cleared; the silence before the payoff
+CUT.fix = +(Math.ceil((CUT.hush + 0.5 - GRID0) / BEAT - 1e-6) * BEAT + GRID0).toFixed(4);   // 12.0: the payoff on a beat, in the pause before the line that names it
+CUT.face = CUT.hush - 0.25;                 // 11.25: in on the face while the flood still lands; at the hush it all freezes
+CUT.end = LINE('fix').t1 + 0.35;            // 13.85: the last caption clears
+const DURATION = Math.round((CUT.end + 1.15) * FPS) / FPS;   // a 1.15s end hold
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+
+// ---- the stage: one drawing in stage units (the cache above, the database below: y 220–845), fitted into
+// each format's band between the title card and the captions. SX / SY map stage units to the frame.
+const STAGE = { x0: 100, y0: 220, x1: 900, y1: 845 };
+const BAND = { '9:16': [500, 1125, 504], '4:5': [262, 1040, 540], '1:1': [204, 852, 540] }[FORMAT] || [204, 852, 540];
+const SK = (BAND[1] - BAND[0]) / (STAGE.y1 - STAGE.y0);
+const SX = (x) => BAND[2] + (x - 500) * SK, SY = (y) => BAND[0] + (y - STAGE.y0) * SK;
+const TAG_Y = { '9:16': 392, '4:5': 168, '1:1': 128 }[FORMAT] || 128;   // the title card's centre
+
+// shots: [key, scene, t0, camera]. One era per shot; every boundary is a hard cut on the 8th grid
+const SHOT_LIST = [
+  ['hook',  'hook',  0,          'drift'],   // frame 0: the database on fire, "3 Redis failures"
+  ['pen',   'pen',   CUT.pen,    'wide'],
+  ['penC',  'pen',   CUT.penC,   'db'],
+  ['stamp', 'stamp', CUT.stamp,  'cache'],
+  ['rush',  'rush',  CUT.rush,   'wide'],
+  ['aval',  'aval',  CUT.aval,   'wide'],
+  ['flood', 'aval',  CUT.flood,  'db'],      // the flood lands: in on the database
+  ['face',  'hush',  CUT.face,   'face'],    // the face; at CUT.hush the picture freezes for the silence
+  ['fix',   'fix',   CUT.fix,    'pull'],    // the payoff, then the end hold
+];
+const SCENE = { hook: () => sceneHook(), pen: () => scenePen(), stamp: () => sceneStamp(), rush: () => sceneRush(), aval: () => sceneAval(), hush: () => sceneHush(), fix: () => sceneFix() };
+const ERA_LIST = SHOT_LIST.map(([, sc, t0], i) => [t0, i + 1 < SHOT_LIST.length ? SHOT_LIST[i + 1][2] : DURATION, SCENE[sc]]);
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, gridOffset: GRID0, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'reel',
+  reel: { hook: 1.0, endHold: +(DURATION - CUT.end).toFixed(3), loop: false, cover: 1.0, payoff: CUT.fix },
+  shots: SHOT_LIST.map(([key, , t0], i) => ({ id: i + 1, key, era: i, t0, t1: ERA_LIST[i][1], title: key })),
+  cuts: SHOT_LIST.slice(1).map(([, , t0]) => t0),
+  morphs: [],
+  cues: { ...CUT },
+  acts: [
+    { name: '1 Hook',      role: 'build',   t0: 0, t1: CUT.pen },
+    { name: '2 Three ways', role: 'journey', t0: CUT.pen, t1: CUT.aval },
+    { name: '3 Avalanche', role: 'peak',    t0: CUT.aval, t1: CUT.hush },
+    { name: '4 Hush',      role: 'silence', t0: CUT.hush, t1: CUT.fix },
+    { name: '5 The fix',   role: 'gift',    t0: CUT.fix, t1: Math.max(CUT.end, CUT.fix + 2) },
+    { name: '6 Hold',      role: 'goodbye', t0: Math.max(CUT.end, CUT.fix + 2), t1: DURATION },
+  ],
+  board: [
+    { t: 0.6, title: 'hook: 3 failures, the database on fire', sound: 'an alarm pulse from frame 0', next: 'cut on the 8th' },
+    { t: 3.2, title: 'penetration: "?" keys fall through', sound: 'a tick per miss', next: 'cut to the database' },
+    { t: 6.6, title: 'stampede: the hot key runs out', sound: 'a clock, then a rush of 16ths', next: 'cut wide' },
+    { t: 10.6, title: 'avalanche: every key at once', sound: 'a riser into a crash, then a hard stop', next: 'the hush' },
+    { t: 12.8, title: 'the fix: TTL jitter', sound: 'the loudest stab, then a warm chord', next: 'hold' },
+  ],
+  narration: typeof VOICE !== 'undefined' ? VOICE.lines.map((l) => ({ t0: l.t0, t1: l.t1, text: l.text })) : [],
+};
+window.TIMELINE = TIMELINE;

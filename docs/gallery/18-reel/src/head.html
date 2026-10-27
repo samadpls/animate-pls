@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel: a cache avalanche</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { height: min(100vh, 100vw); width: auto; aspect-ratio: 1 / 1; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  REEL TILE: A CACHE AVALANCHE — 1:1, 3.0s @ 120 BPM, 24fps, crosshatch, the reel format (F10) in one beat.
+//  From samadpls.com, "Three Redis failures that look similar until production": every key in the cache was
+//  written with the same TTL, so every TTL bar runs out together; on "expire" every key goes cold at once and the
+//  requests fall straight through to the database, which catches fire. The last 0.4s holds still.
+//  The words are lit one by one by kit/captions.js (the reel template's captions: the crosshatch hand on an ink edge,
+//  a yellow marker under the word being said). Red = load on the database, cyan = a key the cache can serve.
+//  Gallery thumb: t = 2.33 ("together" lit, every key cold, the database burning).
+//  Build: node <skill>/tools/build.mjs docs/gallery/14-reel
+// =====================================================================
+const FPS = 24, W = 1080, H = 1080, FORMAT = '1:1';
+const BPM = 120, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4, GRID0 = 0;
+const DURATION = 3.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { top: 60, bottom: 60, right: 60, left: 60 };
+const HAND = '"Ink Free", "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", "Comic Neue", cursive';   // local handwriting fonts: Windows, macOS, Linux
+const CX = 540;
+
+// one chunk for the whole clip (maxWords 4); the highlight walks the words; the chunk holds to the last frame
+const CAPTION_SCRIPT = [{ t: 0.12, t1: 2.05, text: 'many keys expire together' }];
+const CAPTION_OPTS = { maxWords: 4, maxSpan: 2.5, hold: 2, font: HAND, weight: 700, upper: false, fill: '#f4ecd9', stroke: '#1f140c', accent: '#f0c55a', mode: 'marker', boil: true, size: 92 };
+const CUT = { expA: 0.875, hold: 2.6, end: DURATION };   // every key expires on "expire"; the picture holds from 2.6s
+
+// the stage (shared with templates/reel): stage units fitted into the band between the title card and the caption
+const STAGE = { x0: 100, y0: 220, x1: 900, y1: 845 };
+const BAND = [190, 838, 540];
+const SK = (BAND[1] - BAND[0]) / (STAGE.y1 - STAGE.y0);
+const SX = (x) => BAND[2] + (x - 500) * SK, SY = (y) => BAND[0] + (y - STAGE.y0) * SK;
+const TAG_Y = 116;
+
+const SHOT_LIST = [['aval', 'aval', 0, 'wide']];
+const ERA_LIST = [[0, DURATION, () => sceneTile()]];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'reel',
+  reel: { hook: 0.5, endHold: +(DURATION - CUT.hold).toFixed(3), loop: false, cover: 2.33 },
+  shots: [{ id: 1, key: 'aval', era: 0, t0: 0, t1: DURATION, title: 'every key expires together' }],
+  cuts: [],
+  morphs: [],
+  cues: { ...CUT },
+  acts: [
+    { name: '1 Warm', role: 'build', t0: 0, t1: CUT.expA },
+    { name: '2 Avalanche', role: 'gift', t0: CUT.expA, t1: CUT.hold },
+    { name: '3 Hold', role: 'goodbye', t0: CUT.hold, t1: DURATION },
+  ],
+  board: [
+    { t: 0.6, title: 'every TTL bar the same length', sound: 'soft plucks as hits come back', next: 'expire' },
+    { t: 2.33, title: 'every key cold, the database on fire', sound: 'a soft chime, a low rumble', next: 'hold' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

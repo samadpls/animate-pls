@@ -1,0 +1,17 @@
+{
+  "name": "animate-pls",
+  "owner": {
+    "name": "samadpls"
+  },
+  "metadata": {
+    "description": "Animated videos made in code, narrated in your own voice. Explainers, product films, reels and edits of your own screen recordings."
+  },
+  "plugins": [
+    {
+      "name": "animate-pls",
+      "source": "plugins/animate-pls",
+      "description": "Animated videos made in code, on your own machine: explainers, product films, reels and edits of your own screen recordings, in 20 one-word designs (cutout, clay, comic, chalkboard, linocut, watercolor, terminal, poster and more), with word-by-word captions and an optional free local voice-over cloned from your own recording. MP4 in 9:16, 1:1, 4:5 and 16:9.",
+      "category": "creativity"
+    }
+  ]
+}

@@ -405,13 +405,13 @@ function doodleHero(x, y, r, o = {}) {
 //                               hi = [[lineIndex, 'word'], ...] gets a highlighter swipe once the line is down
 // ---------------------------------------------------------------------
 function pageTagDraw(str) {
-  const size = 70, w = letterW(str, size, 'marker'), x = 84, y = 340;
+  const size = 70, w = letterW(str, size, 'marker'), x = 84, y = SAFE.top + 100;   // inside the safe area (9:16: y 340)
   tapeStrip(x + w / 2, y - size * 0.3, w + 70, -0.03, 'tagtape' + str, size * 1.15);
   const [x0, x1] = handLetter(str, x, y, size, { face: 'marker', align: 'left', reveal: ev(E0 + 0.1, 0.3), key: 'tag' + str, jit: 0.7 });
   underline(x0, x1, y + 20, { col: SK.red, w: 5, key: 'tagu' + str, part: ev(E0 + 0.4, 0.2) });
 }
 function pageCaptionDraw(lines, hi = [], o = {}) {
-  const size = o.size ?? 80, y0 = o.y ?? 1330, lh = size * 1.12, t0 = E0 + (o.at ?? 0.35);
+  const size = o.size ?? 80, y0 = o.y ?? H - SAFE.bottom - 170, lh = size * 1.12, t0 = E0 + (o.at ?? 0.35);   // 9:16: y 1330
   lines.forEach((line, li) => {
     const y = y0 + li * lh, font = skFont(size, 'hand'), xs = glyphX(line, font), x0 = CX - xs[xs.length - 1] / 2;
     for (const [hl, word] of hi) if (hl === li) { const k = line.indexOf(word); if (k >= 0) highlight(x0 + xs[k], x0 + xs[k + word.length], y - size * 0.28, size * 0.55, ev(t0 + 0.5 + li * 0.25, 0.25), { key: 'caph' + li + line }); }

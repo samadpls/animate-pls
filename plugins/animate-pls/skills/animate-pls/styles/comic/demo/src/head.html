@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comic demo</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1b1714; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { max-width: 100vw; max-height: 100vh; width: auto; height: auto; display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+"use strict";
+// =====================================================================
+//  COMIC DEMO — 6.0s @ 120 BPM, 24fps, on 2s, in 9:16 (main), 1:1 and 16:9. 7:00 A.M.: the alarm clock rings
+//  (RRRING!) and the hero jolts awake at the table; the clock face bursts into the sun over the rooftops, where the
+//  hero skates off to work (WHOOSH!). Proves the style kit renders, morphs (an action burst through a panel-ruled
+//  iris) and stays deterministic in every format.
+//  Build: node <skill>/tools/build.mjs <skill>/styles/comic/demo  (?format=1:1 or ?format=16:9 for the others)
+// =====================================================================
+const FORMATS = { '9:16': [1080, 1920], '1:1': [1080, 1080], '16:9': [1920, 1080] };
+const FORMAT = new URLSearchParams(location.search).get('format') || '9:16';
+const FPS = 24, [W, H] = FORMATS[FORMAT];
+{ const cv = document.getElementById('c'); cv.width = W; cv.height = H; }
+const BPM = 120, GRID0 = 0, BEAT = 60 / BPM, E8 = BEAT / 2, E16 = BEAT / 4;
+const DURATION = 6.0;
+const NFRAMES = Math.round(DURATION * FPS);
+const LOOP_T = NFRAMES / FPS;
+const SAFE = { '9:16': { top: 240, bottom: 420, right: 140 }, '1:1': { top: 60, bottom: 110, right: 60 }, '16:9': { top: 60, bottom: 110, right: 60 } }[FORMAT];
+const HAND = '"Trebuchet MS", "DejaVu Sans", Verdana, sans-serif';   // the storyboard's title font
+const CX = (W - SAFE.right) / 2;
+const onBeat = (t) => +(GRID0 + Math.round((t - GRID0) / E8) * E8).toFixed(4);
+const M1 = onBeat(3.0);   // the morph: the clock face becomes the sun
+
+const ERA_LIST = [[0, M1, () => sceneRoom()], [M1, DURATION, () => sceneRoofs()]];
+const SHOTS = [
+  ['room', 0, 0.0, M1, 'the alarm clock rings; the hero jolts awake at the table'],
+  ['roofs', 1, M1, DURATION, 'the clock becomes the sun over the rooftops; the hero skates off to work'],
+];
+const TIMELINE = {
+  width: W, height: H, fps: FPS, bpm: BPM, gridOffset: GRID0, duration: DURATION, frames: NFRAMES, loop: LOOP_T, safe: SAFE, aspect: FORMAT,
+  format: 'morph-chain',
+  shots: SHOTS.map(([key, era, t0, t1, title], i) => ({ id: i + 1, key, era, t0, t1, title })),
+  cuts: [],
+  morphs: [M1],
+  cues: { ring: 0.75, wake: 1.25, skate: 3.5, whoosh: 4.0 },
+  acts: [
+    { name: '1 Room', role: 'build', t0: 0.0, t1: M1 },
+    { name: '2 Roofs', role: 'gift', t0: M1, t1: DURATION },
+  ],
+  board: [
+    { t: 1.75, title: 'RRRING!', sound: 'a bell trill on 16ths, a jolt', next: 'the clock becomes the sun' },
+    { t: 5.0, title: 'off to work', sound: 'a bright pad, a whoosh', next: 'loops' },
+  ],
+  narration: [],
+};
+window.TIMELINE = TIMELINE;

@@ -5,16 +5,17 @@
 //  Set `to = 'm'` (music bus) or `to = 's'` (sfx bus) before calling them. Notes: nz('D4').
 // =====================================================================
 // live preview: rAF on the 24fps grid; click to hear the score (?t=1.5 freezes a frame)
+// a piece with assets/ has no renderFrame until its images are decoded (tools/build.mjs): the preview waits for it
 const QS = new URLSearchParams(location.search);
 const LIVE = { audio: null, t0: 0, start: performance.now() };
 if (!QS.has('export')) {
   const cv = document.getElementById('c');
-  if (QS.has('t')) renderFrame(parseFloat(QS.get('t')));
+  if (QS.has('t')) { const still = () => (typeof renderFrame === 'function' ? renderFrame(parseFloat(QS.get('t'))) : requestAnimationFrame(still)); if (window.ASSETS_READY) requestAnimationFrame(still); else still(); }
   else {
     const tick = () => {
       const sec = LIVE.audio ? LIVE.audio.currentTime - LIVE.t0 : (performance.now() - LIVE.start) / 1000;
       const t = ((sec % LOOP_T) + LOOP_T) % LOOP_T;
-      renderFrame(Math.floor(t * FPS) / FPS);
+      if (typeof renderFrame === 'function') renderFrame(Math.floor(t * FPS) / FPS);
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);

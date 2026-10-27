@@ -3,9 +3,10 @@
 //   frames:   Playwright calls window.renderFrame(i/fps) and saves the canvas as PNG
 //   audio:    window.renderAudioWav() renders the score in an OfflineAudioContext
 //   stems:    window.renderAudioStems() (optional) -> { music: b64wav, sfx: b64wav, ... }
-//   mux:      ffmpeg -> renders/final.mp4
-//   captions: TIMELINE.narration (optional) -> renders/narration.srt + renders/final-captions.mp4
-//             (a preview for reading the script against the picture; the real voice-over is added outside)
+//   mux:      ffmpeg -> renders/final.mp4, H.264 in BT.709 (libx264, else libopenh264 / h264_videotoolbox / h264_mf;
+//             MPEG-4 part 2 as the last resort; the one used is printed)
+//   captions: TIMELINE.narration (optional) -> renders/narration.srt + renders/final-captions.mp4 (another format:
+//             narration-<w>x<h>.srt + final-<w>x<h>-captions.mp4); a preview for reading the script against the picture
 //
 // Frame size comes from TIMELINE.width / TIMELINE.height (defaults to 1080x1080).
 //
@@ -18,21 +19,11 @@
 //           over the score: the score at "music" dB, ducked a little more while the voice speaks, then -14 LUFS
 //
 // usage: node tools/export.mjs pieces/<name> [--from N] [--to N] [--workers 4] [--no-audio] [--no-mux] [--no-captions] [--only-audio] [--share] [--gpu] [--format F | --formats A,B] [--blur N]
-import { createRequire } from 'node:module';
-import { execSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { GPU_ARGS, gpuReport } from './gpu.mjs';
-
-const require = createRequire(import.meta.url);
-function loadPlaywright() {
-  try { return require('playwright'); } catch {
-    const root = execSync('npm root -g').toString().trim();
-    return require(path.join(root, 'playwright'));
-  }
-}
-const { chromium } = loadPlaywright();
+import { chromium, pieceURL, openPiece } from './lib/pw.mjs';
 
 const USAGE = 'usage: node tools/export.mjs pieces/<name> [--from N] [--to N] [--workers 4] [--no-audio] [--no-mux] [--no-captions] [--only-audio] [--share] [--gpu] [--format F | --formats A,B] [--blur N]';
 const argv = process.argv.slice(2);
@@ -56,7 +47,7 @@ if (opt('formats')) {
 const workers = parseInt(opt('workers', '4'), 10);
 const onlyAudio = flag('only-audio');
 const FORMAT = opt('format', null), BLUR = Math.max(1, parseInt(opt('blur', '1'), 10));
-const url = pathToFileURL(path.join(ROOT, 'index.html')).href + '?export=1' + (FORMAT ? `&format=${encodeURIComponent(FORMAT)}` : '');
+const PAGE = path.join(ROOT, 'index.html'), url = pieceURL(PAGE, FORMAT);
 const PIECE_JSON = fs.existsSync(path.join(ROOT, 'piece.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'piece.json'), 'utf8')) : {};
 
 fs.mkdirSync(RENDERS, { recursive: true });
@@ -70,7 +61,9 @@ await probe.goto(url);
 await probe.waitForFunction(() => window.TIMELINE);
 const meta = await probe.evaluate(() => {
   const T = window.TIMELINE;
-  return { frames: T.frames, fps: T.fps, width: T.width || 1080, height: T.height || 1080, narration: T.narration || null, gpu: !!T.gpu, aspect: T.aspect || null };
+  // a reel (F10) draws its own word captions in the canvas (kit/captions.js): no burned libass preview on top of them
+  const reel = !!(T.reel || T.format === 'reel'), canvasCaptions = typeof capDraw === 'function' || !!(T.captions && T.captions.length);
+  return { frames: T.frames, fps: T.fps, width: T.width || 1080, height: T.height || 1080, narration: T.narration || null, gpu: !!T.gpu, aspect: T.aspect || null, reel, canvasCaptions };
 });
 await probe.close();
 if (meta.gpu || flag('gpu')) {
@@ -84,9 +77,7 @@ async function openPage() {
   const page = await context.newPage();
   page.on('pageerror', (e) => { console.error('PAGE ERROR:', e.message); process.exitCode = 1; });
   page.on('console', (m) => { if (m.type() === 'error') console.error('console:', m.text()); });
-  await page.goto(url);
-  await page.waitForFunction(() => typeof window.renderFrame === 'function' && window.TIMELINE);
-  return page;
+  return openPiece(page, PAGE, { format: FORMAT });   // with the frame feed (tools/lib/pw.mjs) for footage pieces
 }
 
 const first = await openPage();
@@ -109,10 +100,12 @@ if (!onlyAudio) {
   await Promise.all(pages.map(async (page) => {
     while (queue.length) {
       const i = queue.shift();
-      const b64 = await page.evaluate(([fi, n]) => {
+      const b64 = await page.evaluate(async ([fi, n]) => {
         const cv = document.getElementById('c'), fps = window.TIMELINE.fps;
-        if (n <= 1) { window.renderFrame(fi / fps); return cv.toDataURL('image/png').split(',')[1]; }
-        // motion blur: n sub-frames across half the frame interval (a 180-degree shutter), averaged
+        if (n <= 1) { await window.__frame(fi / fps); return cv.toDataURL('image/png').split(',')[1]; }
+        // motion blur: n sub-frames across half the frame interval (a 180-degree shutter), averaged;
+        // footage is prepared once for the output frame and held across its sub-frames
+        await window.__prepare(fi / fps);
         const g = cv.getContext('2d'), acc = new Float32Array(cv.width * cv.height * 4);
         for (let j = 0; j < n; j++) { window.renderFrame((fi + (j / n) * 0.5) / fps, cv, true); const d = g.getImageData(0, 0, cv.width, cv.height).data; for (let k = 0; k < d.length; k++) acc[k] += d[k]; }
         const out = g.createImageData(cv.width, cv.height); for (let k = 0; k < acc.length; k++) out.data[k] = Math.round(acc[k] / n);
@@ -131,6 +124,15 @@ if (!flag('no-audio')) {
   const b64 = await first.evaluate(async () => await window.renderAudioWav());
   fs.writeFileSync(wavPath, Buffer.from(b64, 'base64'));
   console.log(`audio.wav written (${(fs.statSync(wavPath).size / 1e6).toFixed(2)} MB) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  // a reel plays on phones next to other reels: the score alone goes to -14 LUFS too (a voice or a track is mixed there below)
+  if (meta.reel && !PIECE_JSON.voice?.file && !PIECE_JSON.music?.file) {
+    const tmp = path.join(RENDERS, 'audio-raw.wav');
+    fs.renameSync(wavPath, tmp);
+    const r = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', tmp, '-af', 'loudnorm=I=-14:TP=-2:LRA=11', '-ar', '48000', wavPath], { stdio: 'inherit' });   // -2 dBTP: AAC adds ~0.6 dB of overshoot
+    if (r.status !== 0) { console.error('reel loudness pass failed'); process.exit(1); }
+    fs.rmSync(tmp);
+    console.log('reel: score normalised to -14 LUFS');
+  }
   t0 = Date.now();
   const stems = await first.evaluate(async () => (typeof window.renderAudioStems === 'function' ? await window.renderAudioStems() : null));
   if (stems) {
@@ -168,35 +170,68 @@ if (!flag('no-audio')) {
 }
 await browser.close();
 
+// ---- the H.264 encoder: the first one this ffmpeg has that really encodes (BtbN's LGPL builds have no libx264,
+// macOS has VideoToolbox, Windows Media Foundation); mpeg4 (MPEG-4 part 2) is the last resort, in every build.
+// Quality per use: master (final.mp4), preview (the caption burn), share (share.mp4). Without CRF, the bitrate
+// follows the pixel rate (bits per pixel per frame).
+const QUALITY = { master: { crf: 14, preset: 'slow', bpp: 0.4, q: 2 }, preview: { crf: 20, preset: 'medium', bpp: 0.15, q: 4 }, share: { crf: 24, preset: 'slow', bpp: 0.08, q: 6 } };
+const ENCODERS = {
+  libx264: (q) => ['-c:v', 'libx264', '-preset', q.preset, '-crf', String(q.crf)],
+  libopenh264: (q, br) => ['-c:v', 'libopenh264', '-b:v', br],
+  h264_videotoolbox: (q, br) => ['-c:v', 'h264_videotoolbox', '-b:v', br, '-profile:v', 'high'],
+  h264_mf: (q, br) => ['-c:v', 'h264_mf', '-b:v', br],
+  mpeg4: (q) => ['-c:v', 'mpeg4', '-q:v', String(q.q)],
+};
+let ENC = null;
+function encoder() {
+  if (ENC) return ENC;
+  const list = spawnSync('ffmpeg', ['-hide_banner', '-encoders'], { encoding: 'utf8' }).stdout || '';
+  // listed is not enough for the hardware ones (no GPU, a VM): one tiny test frame each
+  const works = (n) => n === 'libx264' || n === 'mpeg4' || spawnSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=gray:s=256x256:r=24', '-frames:v', '2', ...ENCODERS[n](QUALITY.master, '1M'), '-pix_fmt', 'yuv420p', '-f', 'null', '-']).status === 0;
+  ENC = Object.keys(ENCODERS).find((n) => new RegExp(`^ V\\S{5} ${n} `, 'm').test(list) && works(n));
+  if (!ENC) { console.error('this ffmpeg has no H.264 or MPEG-4 encoder (ffmpeg -encoders): install a full ffmpeg build'); process.exit(1); }
+  console.log(`video encoder: ${ENC}${ENC === 'libx264' ? '' : ' (no libx264 in this ffmpeg)'}`);
+  return ENC;
+}
+const vcodec = (use) => { const q = QUALITY[use], n = encoder(); return ENCODERS[n](q, String(Math.round(meta.width * meta.height * meta.fps * q.bpp))); };
+const FILTERS = spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout || '';
+// BT.709 (what HD players assume): convert RGB with the BT.709 matrix into limited range, and say so in the stream.
+// Newer ffmpeg takes the tags from the frames, not from -color_primaries etc., so setparams stamps them there too.
+const BT709 = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'];
+const TO709 = 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p' + (/\bsetparams\b/.test(FILTERS) ? ',setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv' : '');
+
 const full = from === 0 && to === meta.frames - 1;
 if (!flag('no-mux') && !onlyAudio && full) {
   const out = path.join(RENDERS, opt('out', `final${SUFFIX}.mp4`));
   const args = ['-y', '-hide_banner', '-loglevel', 'error',
     '-framerate', String(meta.fps), '-i', path.join(FR, 'f%04d.png'),
     ...(fs.existsSync(wavPath) && !flag('no-audio') ? ['-i', wavPath, '-map', '0:v:0', '-map', '1:a:0', '-c:a', 'aac', '-b:a', '192k'] : ['-map', '0:v:0']),
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-pix_fmt', 'yuv420p', '-r', String(meta.fps),
+    ...vcodec('master'), '-vf', TO709, ...BT709, '-r', String(meta.fps),
     '-frames:v', String(meta.frames), '-movflags', '+faststart', out];
   const r = spawnSync('ffmpeg', args, { stdio: 'inherit' });
   if (r.status !== 0) { console.error('ffmpeg failed'); process.exit(1); }
   console.log('wrote', out);
 
-  if (meta.narration && meta.narration.length && !flag('no-captions')) {
+  if (meta.narration && meta.narration.length && !flag('no-captions') && !meta.canvasCaptions) {
     const ts = (s) => { const ms = Math.round(s * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`; };
     const srt = meta.narration.map((n, i) => `${i + 1}\n${ts(n.t0)} --> ${ts(n.t1)}\n${n.text}\n`).join('\n');
-    fs.writeFileSync(path.join(RENDERS, 'narration.srt'), srt);
+    // this format's own names (another format's pass must not burn or overwrite the main one's)
+    const srtName = `narration${SUFFIX}.srt`, capOut = out.replace(/\.mp4$/i, '') + '-captions.mp4';
+    fs.writeFileSync(path.join(RENDERS, srtName), srt);
     // libass scales subtitle units to PlayResY=288, so margins/sizes are in 288ths of the frame height
     const unit = meta.height / 288, vertical = meta.height > meta.width;
     const marginV = Math.round((vertical ? 470 : 70) / unit), fontSize = Math.round((vertical ? 64 : 46) / unit);
     const style = `Fontname=${process.platform === 'win32' ? 'Consolas' : process.platform === 'darwin' ? 'Menlo' : 'DejaVu Sans Mono'},Fontsize=${fontSize},PrimaryColour=&H00FFFFFF,BackColour=&H99000000,BorderStyle=3,Outline=6,Shadow=0,Alignment=2,MarginV=${marginV}`;
     // some ffmpeg builds (no libass) have no subtitles filter: keep the .srt (platforms take it as a captions file) and go on
-    const hasSubs = /\bsubtitles\b/.test(spawnSync('ffmpeg', ['-hide_banner', '-filters'], { encoding: 'utf8' }).stdout || '');
-    if (!hasSubs) console.log(`wrote ${path.join(RENDERS, 'narration.srt')}; no burned-in preview (this ffmpeg has no subtitles filter)`);
+    const hasSubs = /\bsubtitles\b/.test(FILTERS);
+    if (!hasSubs) console.log(`wrote ${path.join(RENDERS, srtName)}; no burned-in preview (this ffmpeg has no subtitles filter)`);
     else {
-      const r2 = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', 'final.mp4',
-        '-vf', `subtitles=narration.srt:force_style='${style}'`, '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'copy', 'final-captions.mp4'],
+      // run in renders/ with a bare .srt name: a Windows drive letter's colon breaks the filter's own syntax
+      const r2 = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', out,
+        '-vf', `subtitles=${srtName}:force_style='${style}'`, ...vcodec('preview'), '-pix_fmt', 'yuv420p', ...BT709, '-c:a', 'copy', capOut],
       { cwd: RENDERS, stdio: 'inherit' });
       if (r2.status !== 0) { console.error('caption burn failed'); process.exit(1); }
-      console.log('wrote', path.join(RENDERS, 'final-captions.mp4'), '(narration preview)');
+      console.log('wrote', capOut, '(narration preview)');
     }
   }
 }
@@ -212,8 +247,8 @@ if (onlyAudio && !flag('no-mux') && fs.existsSync(path.join(RENDERS, `final${SUF
 // --share: a smaller encode for sending to a phone (CRF 24)
 if (flag('share') && fs.existsSync(path.join(RENDERS, `final${SUFFIX}.mp4`))) {
   const out = path.join(RENDERS, `share${SUFFIX}.mp4`);
-  const r = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', path.join(RENDERS, `final${SUFFIX}.mp4`), '-c:v', 'libx264', '-crf', '24', '-preset', 'slow',
-    '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out], { stdio: 'inherit' });
+  const r = spawnSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', path.join(RENDERS, `final${SUFFIX}.mp4`), ...vcodec('share'),
+    '-pix_fmt', 'yuv420p', ...BT709, '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out], { stdio: 'inherit' });
   if (r.status !== 0) { console.error('share encode failed'); process.exit(1); }
   console.log('wrote', out);
 }
